@@ -89,6 +89,7 @@ export function instancesInWindow(
           recurring: false,
           color,
           editable,
+          resourceId: event.resourceId,
           source: event,
         });
       }
@@ -120,6 +121,7 @@ export function instancesInWindow(
         recurring: true,
         color,
         editable,
+        resourceId: event.resourceId,
         source: event,
       });
     }
