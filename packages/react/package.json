@@ -1,0 +1,62 @@
+{
+  "name": "@calidar/react",
+  "version": "0.0.1",
+  "description": "React adapter for @calidar/core — headless calendar with Google/Outlook-style UX.",
+  "license": "MIT",
+  "author": "Julien Ollivier",
+  "homepage": "https://github.com/juulieen/calidar/tree/main/packages/react#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/juulieen/calidar.git",
+    "directory": "packages/react"
+  },
+  "bugs": "https://github.com/juulieen/calidar/issues",
+  "keywords": [
+    "calendar",
+    "react",
+    "scheduler",
+    "rrule",
+    "recurrence",
+    "timezone",
+    "agenda",
+    "events",
+    "typescript"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "sideEffects": ["**/*.css"],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": "./dist/styles.css"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup && cp src/styles.css dist/styles.css",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "tsup && cp src/styles.css dist/styles.css"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "dependencies": {
+    "@calidar/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  }
+}

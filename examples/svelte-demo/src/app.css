@@ -1,0 +1,99 @@
+:root {
+  --demo-bg: #ffffff;
+  --demo-text: #18181b;
+  --demo-muted: #6b6b70;
+  --demo-border: rgba(24, 24, 27, 0.07);
+  --demo-border-strong: rgba(24, 24, 27, 0.12);
+  --demo-surface-hover: #f4f4f3;
+  --demo-accent: #4f46e5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+#app {
+  height: 100vh;
+  height: 100dvh;
+}
+.demo {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--demo-bg);
+  color: var(--demo-text);
+}
+.demo__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 16px;
+  background: var(--demo-bg);
+  color: var(--demo-text);
+  border-bottom: 1px solid var(--demo-border);
+  flex: none;
+}
+.demo__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.demo__mark {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--demo-accent);
+  flex: none;
+}
+.demo__zone {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--demo-muted);
+}
+.demo__zone select {
+  font: inherit;
+  font-size: 13px;
+  color: var(--demo-text);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--demo-border-strong);
+  background: var(--demo-bg);
+  min-height: 34px;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+.demo__zone select:hover {
+  background: var(--demo-surface-hover);
+}
+.demo__zone select:focus-visible {
+  outline: 2px solid var(--demo-accent);
+  outline-offset: 2px;
+}
+.demo__cal {
+  flex: 1;
+  min-height: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --demo-bg: #0f0f11;
+    --demo-text: #ececee;
+    --demo-muted: #9b9ba3;
+    --demo-border: rgba(255, 255, 255, 0.08);
+    --demo-border-strong: rgba(255, 255, 255, 0.14);
+    --demo-surface-hover: #1d1d20;
+    --demo-accent: #818cf8;
+  }
+}

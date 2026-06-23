@@ -1,0 +1,54 @@
+{
+  "name": "@calidar/core",
+  "version": "0.0.1",
+  "description": "Headless, framework-agnostic calendar engine: timezone-aware dates, RRULE recurrence, overlap layout, reactive store.",
+  "license": "MIT",
+  "author": "Julien Ollivier",
+  "homepage": "https://github.com/juulieen/calidar#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/juulieen/calidar.git",
+    "directory": "packages/core"
+  },
+  "bugs": "https://github.com/juulieen/calidar/issues",
+  "keywords": [
+    "calendar",
+    "scheduler",
+    "headless",
+    "rrule",
+    "recurrence",
+    "timezone",
+    "agenda",
+    "events",
+    "datepicker",
+    "typescript"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "tsup"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

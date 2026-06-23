@@ -1,0 +1,23 @@
+{
+  "name": "calidar-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Headless, performant calendar engine with Google/Outlook-style UX. React & Svelte adapters.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r --filter './packages/*' build",
+    "test": "pnpm -r --filter './packages/*' test",
+    "typecheck": "pnpm -r --filter './packages/*' typecheck",
+    "dev": "pnpm -r --parallel dev"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "tsup": "^8.3.5",
+    "vitest": "^2.1.8"
+  },
+  "packageManager": "pnpm@10.33.1",
+  "engines": {
+    "node": ">=18"
+  }
+}
