@@ -77,51 +77,57 @@ export function instancesInWindow(
     const editable = event.editable ?? true;
     const color = resolveColor(event);
 
-    if (!event.rrule) {
-      if (end > window.start && start < window.end) {
+    const exdates = new Set<number>();
+    if (event.exdates) {
+      for (const ex of event.exdates) exdates.add(parseDateValue(ex, tz));
+    }
+
+    // Track emitted occurrence starts so RDATE entries don't duplicate them.
+    const emitted = new Set<number>();
+    const push = (occStart: number, occEnd: number, recurring: boolean, key: string) => {
+      emitted.add(occStart);
+      if (occEnd > window.start && occStart < window.end) {
         out.push({
-          key: event.id,
+          key,
           eventId: event.id,
           title: event.title,
-          start,
-          end,
+          start: occStart,
+          end: occEnd,
           allDay: event.allDay ?? false,
-          recurring: false,
+          recurring,
           color,
           editable,
           source: event,
         });
       }
-      continue;
+    };
+
+    if (event.rrule) {
+      const rule = parseRRule(event.rrule, tz);
+      const dtstart = epochToWall(start, tz);
+      const occurrences = expandRecurrence({
+        dtstart,
+        durationMs,
+        timeZone: tz,
+        rule,
+        exdates,
+        window,
+      });
+      for (const occ of occurrences) {
+        push(occ.start, occ.end, true, `${event.id}@${occ.start}`);
+      }
+    } else if (!exdates.has(start)) {
+      push(start, end, false, event.id);
     }
 
-    const rule = parseRRule(event.rrule, tz);
-    const dtstart = epochToWall(start, tz);
-    const exdates = new Set<number>();
-    if (event.exdates) {
-      for (const ex of event.exdates) exdates.add(parseDateValue(ex, tz));
-    }
-    const occurrences = expandRecurrence({
-      dtstart,
-      durationMs,
-      timeZone: tz,
-      rule,
-      exdates,
-      window,
-    });
-    for (const occ of occurrences) {
-      out.push({
-        key: `${event.id}@${occ.start}`,
-        eventId: event.id,
-        title: event.title,
-        start: occ.start,
-        end: occ.end,
-        allDay: event.allDay ?? false,
-        recurring: true,
-        color,
-        editable,
-        source: event,
-      });
+    // RDATE — additional explicit occurrence dates (RFC 5545), in addition to
+    // the master/RRULE set, minus EXDATE and any already-emitted start.
+    if (event.rdates) {
+      for (const rd of event.rdates) {
+        const rdStart = parseDateValue(rd, tz);
+        if (exdates.has(rdStart) || emitted.has(rdStart)) continue;
+        push(rdStart, rdStart + durationMs, true, `${event.id}@${rdStart}`);
+      }
     }
   }
   out.sort((a, b) => a.start - b.start || a.end - b.end);
