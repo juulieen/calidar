@@ -24,7 +24,7 @@ import {
 import { CalendarToolbar } from "./CalendarToolbar.js";
 import { TimeGridView } from "./TimeGridView.js";
 import { MonthView } from "./MonthView.js";
-import { AgendaView } from "./AgendaView.js";
+import { InfiniteAgendaView } from "./InfiniteAgendaView.js";
 
 export interface CalendarProps extends CalendarCallbacks {
   /** Calendar configuration (used to create a store if `store` is absent). */
@@ -193,7 +193,7 @@ export function Calendar(props: CalendarProps): JSX.Element {
           {view.kind === "month" ? (
             <MonthView model={view} />
           ) : view.kind === "agenda" ? (
-            <AgendaView model={view} />
+            <InfiniteAgendaView />
           ) : (
             <TimeGridView model={view} />
           )}

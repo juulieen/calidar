@@ -12,6 +12,7 @@ export { CalendarToolbar } from "./CalendarToolbar.js";
 export { TimeGridView } from "./TimeGridView.js";
 export { MonthView } from "./MonthView.js";
 export { AgendaView } from "./AgendaView.js";
+export { InfiniteAgendaView } from "./InfiniteAgendaView.js";
 
 // Hook
 export { useCalendar, type UseCalendarResult } from "./useCalendar.js";

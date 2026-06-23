@@ -154,7 +154,7 @@ pnpm --filter svelte-demo dev       # http://localhost:5174
 
 - [x] In-place recurrence editing — `editRecurringEvent` ("this / this-and-following / all")
 - [ ] Resource / multi-calendar columns (day view side-by-side)
-- [ ] Virtualised infinite agenda
+- [x] Virtualised infinite agenda (React) — windowed DOM + infinite scroll
 - [ ] Vue & Solid adapters
 - [ ] `BYSETPOS`, `BYWEEKNO`, `BYYEARDAY`
 - [ ] i18n / localized labels & first-day-of-week presets

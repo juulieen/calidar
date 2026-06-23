@@ -44,10 +44,13 @@ export function CalendarToolbar(): JSX.Element {
     // Treat a single rendered day as "day" so the title shows the full date.
     const titleKind = days.length <= 1 ? "day" : effectiveView.kind;
     title = formatRangeTitle(titleKind, first, days.length);
+  } else if (effectiveView.kind === "agenda") {
+    // The infinite agenda is centred on the cursor; label it by the cursor's
+    // month so ‹ › / Today read sensibly as the view recentres.
+    title = formatRangeTitle("month", epochToPlainDate(cursor, timeZone), 0);
   } else {
-    // Month / agenda: derive from state as before.
-    const count = effectiveView.kind === "agenda" ? 30 : 0;
-    title = formatRangeTitle(view, epochToPlainDate(cursor, timeZone), count);
+    // Month: derive from state as before.
+    title = formatRangeTitle(view, epochToPlainDate(cursor, timeZone), 0);
   }
 
   const isActive = (opt: ViewOption): boolean =>
