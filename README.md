@@ -39,7 +39,7 @@ because that's what your users already know how to use.
 |---|---|
 | 🗓️ **5 views** | Day · N-day (e.g. 3-day) · Week · Month · Agenda |
 | 🌍 **Timezones** | Every instant is correct across DST, built on native `Intl` — no Moment/Luxon |
-| 🔁 **Recurrence** | `FREQ`, `INTERVAL`, `COUNT`, `UNTIL`, `BYDAY` (incl. `3MO`/`-1FR`), `BYMONTHDAY`, `BYMONTH`, `EXDATE` |
+| 🔁 **Recurrence** | `FREQ`, `INTERVAL`, `COUNT`, `UNTIL`, `BYDAY` (incl. `3MO`/`-1FR`), `BYMONTHDAY`, `BYMONTH`, `BYSETPOS`, `BYYEARDAY`, `BYWEEKNO`, `EXDATE` |
 | ✋ **Interactions** | Drag to move, resize edges, drag-to-create — Pointer Events, so mouse + touch + pen |
 | 📱 **Responsive** | Touch targets ≥ 44px, mobile breakpoints, momentum scroll, `contain` for paint isolation |
 | ⚡ **Performance** | Windowed recurrence expansion (only the visible range is materialised), memoised snapshots, bounded DOM |
@@ -157,7 +157,7 @@ pnpm --filter svelte-demo dev       # http://localhost:5174
 - [ ] Virtualised infinite agenda
 - [ ] Vue & Solid adapters
 - [x] RRULE `BYSETPOS` (e.g. last weekday of the month)
-- [ ] RRULE `BYWEEKNO`, `BYYEARDAY`
+- [x] RRULE `BYWEEKNO`, `BYYEARDAY`
 - [ ] i18n / localized labels & first-day-of-week presets
 
 ## License

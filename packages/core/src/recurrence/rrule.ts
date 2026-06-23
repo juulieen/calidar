@@ -44,6 +44,10 @@ export interface ParsedRRule {
   /** BYSETPOS: 1-based positions within each period's candidate set; negative
    *  counts from the end (e.g. -1 = last). */
   bysetpos?: number[];
+  /** BYYEARDAY: day-of-year ordinals (1..366, negative from the end). YEARLY. */
+  byyearday?: number[];
+  /** BYWEEKNO: ISO week numbers (1..53, negative from the end). YEARLY. */
+  byweekno?: number[];
   /** Week start, ISO weekday 1..7. Default Monday. */
   wkst: number;
   /** Tokens that were present but not honoured. */
@@ -116,6 +120,18 @@ export function parseRRule(input: string, untilTimeZone = "UTC"): ParsedRRule {
         break;
       case "BYSETPOS":
         rule.bysetpos = value
+          .split(",")
+          .map((n) => parseInt(n, 10))
+          .filter((n) => !Number.isNaN(n) && n !== 0);
+        break;
+      case "BYYEARDAY":
+        rule.byyearday = value
+          .split(",")
+          .map((n) => parseInt(n, 10))
+          .filter((n) => !Number.isNaN(n) && n !== 0);
+        break;
+      case "BYWEEKNO":
+        rule.byweekno = value
           .split(",")
           .map((n) => parseInt(n, 10))
           .filter((n) => !Number.isNaN(n) && n !== 0);
@@ -194,6 +210,12 @@ export function serializeRRule(rule: ParsedRRule): string {
   }
   if (rule.bymonth && rule.bymonth.length > 0) {
     parts.push(`BYMONTH=${rule.bymonth.join(",")}`);
+  }
+  if (rule.byyearday && rule.byyearday.length > 0) {
+    parts.push(`BYYEARDAY=${rule.byyearday.join(",")}`);
+  }
+  if (rule.byweekno && rule.byweekno.length > 0) {
+    parts.push(`BYWEEKNO=${rule.byweekno.join(",")}`);
   }
   if (rule.bysetpos && rule.bysetpos.length > 0) {
     parts.push(`BYSETPOS=${rule.bysetpos.join(",")}`);
@@ -359,15 +381,7 @@ export function expandRecurrence(params: ExpandParams): Occurrence[] {
     while (iterations++ < cap) {
       const yearStartEpoch = wallToEpoch({ year, month: 1, day: 1, ...tod }, timeZone);
       if (yearStartEpoch >= window.end && rule.count === undefined) break;
-      const months = rule.bymonth ?? [startDate.month];
-      const candidates: PlainDate[] = [];
-      for (const m of months) {
-        for (const day of yearlyDays(year, m, rule, startDate)) {
-          candidates.push({ year, month: m, day });
-        }
-      }
-      candidates.sort(comparePlain);
-      if (emitPeriod(candidates)) break;
+      if (emitPeriod(yearlyCandidates(year, rule, startDate))) break;
       year += rule.interval;
     }
   }
@@ -379,6 +393,87 @@ export function expandRecurrence(params: ExpandParams): Occurrence[] {
 /** Chronological comparator for plain dates. */
 function comparePlain(a: PlainDate, b: PlainDate): number {
   return a.year - b.year || a.month - b.month || a.day - b.day;
+}
+
+function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+/** Number of ISO-8601 weeks in a year (52 or 53). */
+function isoWeeksInYear(year: number): number {
+  const p = (y: number) =>
+    (y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400)) % 7;
+  return p(year) === 4 || p(year - 1) === 3 ? 53 : 52;
+}
+
+/** Monday of the given ISO week of `year` (negative weekno counts from the end). */
+function isoWeekMonday(year: number, weekno: number): PlainDate | null {
+  const total = isoWeeksInYear(year);
+  const w = weekno > 0 ? weekno : total + weekno + 1;
+  if (w < 1 || w > total) return null;
+  // ISO week 1 contains the year's first Thursday, i.e. the week with Jan 4.
+  const jan4: PlainDate = { year, month: 1, day: 4 };
+  const week1Monday = addDays(jan4, -(isoWeekday(jan4) - 1));
+  return addDays(week1Monday, (w - 1) * 7);
+}
+
+/** Dedupe a chronologically sorted plain-date list. */
+function dedupePlain(dates: PlainDate[]): PlainDate[] {
+  const out: PlainDate[] = [];
+  let prev = "";
+  for (const d of dates) {
+    const key = `${d.year}-${d.month}-${d.day}`;
+    if (key !== prev) {
+      out.push(d);
+      prev = key;
+    }
+  }
+  return out;
+}
+
+/** Candidate dates for one YEARLY period (handles BYWEEKNO / BYYEARDAY). */
+function yearlyCandidates(
+  year: number,
+  rule: ParsedRRule,
+  startDate: PlainDate,
+): PlainDate[] {
+  const bymonthOk = (m: number) => !rule.bymonth || rule.bymonth.includes(m);
+  const candidates: PlainDate[] = [];
+
+  if (rule.byweekno) {
+    const weekdays = rule.byday?.map((b) => b.weekday) ?? [isoWeekday(startDate)];
+    for (const wn of rule.byweekno) {
+      const monday = isoWeekMonday(year, wn);
+      if (!monday) continue;
+      for (let off = 0; off < 7; off++) {
+        const d = addDays(monday, off);
+        if (!weekdays.includes(isoWeekday(d))) continue;
+        if (!bymonthOk(d.month)) continue;
+        candidates.push(d);
+      }
+    }
+  } else if (rule.byyearday) {
+    const len = isLeapYear(year) ? 366 : 365;
+    const bydayWeekdays = rule.byday?.map((b) => b.weekday);
+    for (const yd of rule.byyearday) {
+      const ord = yd > 0 ? yd : len + yd + 1;
+      if (ord < 1 || ord > len) continue;
+      const d = addDays({ year, month: 1, day: 1 }, ord - 1);
+      if (!bymonthOk(d.month)) continue;
+      if (bydayWeekdays && !bydayWeekdays.includes(isoWeekday(d))) continue;
+      candidates.push(d);
+    }
+  } else {
+    const months = rule.bymonth ?? [startDate.month];
+    for (const m of months) {
+      for (const day of yearlyDays(year, m, rule, startDate)) {
+        candidates.push({ year, month: m, day });
+      }
+    }
+  }
+
+  candidates.sort(comparePlain);
+  return dedupePlain(candidates);
 }
 
 /** Day-of-month candidates for a MONTHLY period (BYDAY / BYMONTHDAY / default). */
