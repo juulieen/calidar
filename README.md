@@ -37,7 +37,7 @@ because that's what your users already know how to use.
 
 | | |
 |---|---|
-| 🗓️ **5 views** | Day · N-day (e.g. 3-day) · Week · Month · Agenda |
+| 🗓️ **Views** | Day · N-day (e.g. 3-day) · Week · Month · Agenda · **Resources** (per-room/person columns) |
 | 🌍 **Timezones** | Every instant is correct across DST, built on native `Intl` — no Moment/Luxon |
 | 🔁 **Recurrence** | `FREQ`, `INTERVAL`, `COUNT`, `UNTIL`, `BYDAY` (incl. `3MO`/`-1FR`), `BYMONTHDAY`, `BYMONTH`, `EXDATE` |
 | ✋ **Interactions** | Drag to move, resize edges, drag-to-create — Pointer Events, so mouse + touch + pen |
@@ -153,7 +153,7 @@ pnpm --filter svelte-demo dev       # http://localhost:5174
 ## Roadmap
 
 - [x] In-place recurrence editing — `editRecurringEvent` ("this / this-and-following / all")
-- [ ] Resource / multi-calendar columns (day view side-by-side)
+- [x] Resource / multi-calendar columns — `computeResourceView` + React adapter (Svelte/Vue/Solid to follow)
 - [ ] Virtualised infinite agenda
 - [ ] Vue & Solid adapters
 - [ ] `BYSETPOS`, `BYWEEKNO`, `BYYEARDAY`

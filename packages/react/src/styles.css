@@ -625,6 +625,63 @@
   touch-action: pan-y;
 }
 
+/* ---- Resources view ---------------------------------------------------- */
+/* Reuses the time-grid skeleton (.cal-timegrid); only the per-resource column
+   headers and the stacked all-day cells need bespoke "Quiet Ink" treatment. */
+
+.cal-resource-head {
+  flex-direction: row;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cal-text);
+  min-width: 0;
+}
+
+.cal-resource-head__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-resource-head__dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 8%, transparent);
+}
+
+/* All-day band split into one stacked cell per resource column. */
+.cal-resources__allday {
+  display: flex;
+}
+
+.cal-resources__allday-col {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 4px;
+  border-left: 1px solid var(--cal-border);
+  min-width: 0;
+}
+
+.cal-resources__allday-col:first-child {
+  border-left: none;
+}
+
+/* All-day pill inside a resource column: static (no horizontal banding). */
+.cal-resources__band {
+  position: static;
+  height: 22px;
+  left: auto;
+  width: auto;
+  top: auto;
+}
+
 /* ---- Month view -------------------------------------------------------- */
 
 .cal-month {

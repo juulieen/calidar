@@ -25,16 +25,27 @@ const VIEW_OPTIONS: ViewOption[] = [
 ];
 
 export function CalendarToolbar(): JSX.Element {
-  const { store, snapshot, effectiveView, stepPeriod } =
-    useCalendarContext();
+  const {
+    store,
+    snapshot,
+    effectiveView,
+    stepPeriod,
+    resourcesActive,
+    setResourceMode,
+    resourceView,
+  } = useCalendarContext();
   const { state } = snapshot;
   const { view, cursor, timeZone, visibleDays } = state;
+  const hasResources = state.resources.length > 0;
 
   // Derive the title from what's *actually* rendered. For time grids the
   // effective view model carries each visible day, so a collapsed 3-day window
   // reads "23 – 25 June" rather than the full week.
   let title: string;
-  if (
+  if (resourceView) {
+    // Resources mode navigates one day at a time; show that day's full date.
+    title = formatRangeTitle("day", resourceView.date, 1);
+  } else if (
     effectiveView.kind === "day" ||
     effectiveView.kind === "days" ||
     effectiveView.kind === "week"
@@ -51,6 +62,7 @@ export function CalendarToolbar(): JSX.Element {
   }
 
   const isActive = (opt: ViewOption): boolean =>
+    !resourcesActive &&
     opt.view === view &&
     (opt.view !== "days" || opt.visibleDays === visibleDays);
 
@@ -91,6 +103,7 @@ export function CalendarToolbar(): JSX.Element {
             aria-pressed={isActive(opt)}
             aria-label={opt.label}
             onClick={() => {
+              setResourceMode(false);
               if (opt.visibleDays != null) store.setVisibleDays(opt.visibleDays);
               store.setView(opt.view);
             }}
@@ -101,6 +114,21 @@ export function CalendarToolbar(): JSX.Element {
             </span>
           </button>
         ))}
+
+        {hasResources && (
+          <button
+            type="button"
+            className={`cal-btn cal-btn--view${resourcesActive ? " cal-btn--active" : ""}`}
+            aria-pressed={resourcesActive}
+            aria-label="Resources"
+            onClick={() => setResourceMode(true)}
+          >
+            <span className="cal-btn__label cal-btn__label--full">Resources</span>
+            <span className="cal-btn__label cal-btn__label--short" aria-hidden="true">
+              Res
+            </span>
+          </button>
+        )}
       </div>
     </div>
   );

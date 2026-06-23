@@ -10,6 +10,7 @@ import type {
   CalendarSnapshot,
   CalendarStore,
   EventInstance,
+  ResourceViewModel,
   ViewModel,
 } from "@calidar/core";
 
@@ -29,6 +30,8 @@ export interface EventDraft {
   /** Absolute end instant (epoch ms, UTC). */
   end: number;
   allDay: boolean;
+  /** Resource the slot belongs to, when drafted in the resources view. */
+  resourceId?: string;
 }
 
 /** Scope of a recurring-instance edit. Mirrors `@calidar/core`. */
@@ -78,10 +81,17 @@ export interface CalendarContextValue extends CalendarCallbacks {
   /** Non-null only while a compact day window is active (see {@link CompactNav}). */
   compactNav: CompactNav | null;
   /**
-   * Advance the cursor by one rendered period: a whole view step normally, or
-   * `compactNav.nDays` days while the compact window is active.
+   * Advance the cursor by one rendered period: a whole view step normally, one
+   * day while the resources mode is active, or `compactNav.nDays` days while the
+   * compact window is active.
    */
   stepPeriod: (dir: 1 | -1) => void;
+  /** True while the local resources mode is active (overrides `snapshot.view`). */
+  resourcesActive: boolean;
+  /** Toggle the local resources mode on/off. */
+  setResourceMode: (on: boolean) => void;
+  /** The resources view model while the mode is active, else null. */
+  resourceView: ResourceViewModel | null;
 }
 
 export const CalendarContext = createContext<CalendarContextValue | null>(null);

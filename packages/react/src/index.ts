@@ -12,6 +12,7 @@ export { CalendarToolbar } from "./CalendarToolbar.js";
 export { TimeGridView } from "./TimeGridView.js";
 export { MonthView } from "./MonthView.js";
 export { AgendaView } from "./AgendaView.js";
+export { ResourcesView } from "./ResourcesView.js";
 
 // Hook
 export { useCalendar, type UseCalendarResult } from "./useCalendar.js";
@@ -58,6 +59,8 @@ export type {
   TimeGridViewModel,
   MonthViewModel,
   AgendaViewModel,
+  ResourceViewModel,
+  CalendarResource,
   PlainDate,
 } from "@calidar/core";
 export { createCalendar } from "@calidar/core";
