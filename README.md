@@ -156,7 +156,8 @@ pnpm --filter svelte-demo dev       # http://localhost:5174
 - [ ] Resource / multi-calendar columns (day view side-by-side)
 - [ ] Virtualised infinite agenda
 - [ ] Vue & Solid adapters
-- [ ] `BYSETPOS`, `BYWEEKNO`, `BYYEARDAY`
+- [x] RRULE `BYSETPOS` (e.g. last weekday of the month)
+- [ ] RRULE `BYWEEKNO`, `BYYEARDAY`
 - [ ] i18n / localized labels & first-day-of-week presets
 
 ## License
