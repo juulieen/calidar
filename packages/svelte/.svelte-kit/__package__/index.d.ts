@@ -13,6 +13,6 @@ export { DayDragController, type DayMetrics, type DayDragOptions, type DayDragAc
 export { commitDirect, applyRecurringEdit, routeCommit, type EditBounds, } from "./recurringEdit.js";
 export { default as RecurringScopeDialog } from "./RecurringScopeDialog.svelte";
 export type { CalendarCallbacks, SlotSelection, ActiveDrag, RecurringEditScope, RecurringEditRequest, } from "./types.js";
-export { formatTime, formatHour, formatWeekdayShort, formatAgendaDay, formatDayNumber, formatRangeTitle, } from "./format.js";
+export { createFormatters, formatTime, formatHour, formatWeekdayShort, formatAgendaDay, formatDayNumber, formatRangeTitle, type Formatters, } from "./format.js";
 export type { CalendarEvent, CalendarOptions, CalendarSnapshot, CalendarStore, CalendarViewKind, EventInstance, } from "@calidar/core";
 //# sourceMappingURL=index.d.ts.map

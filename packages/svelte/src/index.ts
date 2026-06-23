@@ -44,14 +44,16 @@ export type {
   RecurringEditRequest,
 } from "./types.js";
 
-// Formatting helpers.
+// Formatting helpers (locale / hour12 aware).
 export {
+  createFormatters,
   formatTime,
   formatHour,
   formatWeekdayShort,
   formatAgendaDay,
   formatDayNumber,
   formatRangeTitle,
+  type Formatters,
 } from "./format.js";
 
 // Re-export commonly used core types for convenience.

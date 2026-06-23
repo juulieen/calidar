@@ -17,7 +17,6 @@ import { useCalendarContext } from "./context.js";
 import { useDayDrag, type ActiveDayDrag } from "./useDayDrag.js";
 import { useCommitEdit } from "./useCommitEdit.js";
 import { RecurrenceScopePopover } from "./RecurrenceScopePopover.js";
-import { formatWeekdayShort } from "./format.js";
 
 const MAX_LANES = 4; // bands shown per day before collapsing into "+N"
 const LANE_HEIGHT = 20;
@@ -28,7 +27,8 @@ interface Props {
 }
 
 export function MonthView({ model }: Props): JSX.Element {
-  const { store, onEventClick, onEventCreate } = useCalendarContext();
+  const { store, onEventClick, onEventCreate, formatters } = useCalendarContext();
+  const { formatWeekdayShort } = formatters;
   const { weekStartsOn } = store.getState();
 
   const edit = useCommitEdit();

@@ -21,6 +21,12 @@ const TIME_ZONES = [
   "UTC",
 ] as const;
 
+const LOCALES = [
+  { value: "en-US", label: "English (US)" },
+  { value: "fr-FR", label: "Français" },
+  { value: "ja-JP", label: "日本語" },
+] as const;
+
 /** ISO date-time string (local-to-the-event) for `daysFromToday` at `h:m`. */
 function at(daysFromToday: number, hour: number, minute = 0): string {
   const d = new Date();
@@ -126,10 +132,21 @@ const { store, snapshot } = useCalendar({
 });
 
 const lastAction = ref("");
+const locale = ref("en-US");
+const hour12 = ref<boolean | undefined>(undefined);
 
 function onTzChange(e: Event): void {
   const value = (e.target as HTMLSelectElement).value;
   store.setTimeZone(value);
+}
+
+function onLocaleChange(e: Event): void {
+  locale.value = (e.target as HTMLSelectElement).value;
+}
+
+function onHour12Change(e: Event): void {
+  const v = (e.target as HTMLSelectElement).value;
+  hour12.value = v === "auto" ? undefined : v === "12";
 }
 
 function onEventClick(inst: EventInstance): void {
@@ -181,6 +198,34 @@ function onSelectSlot(): void {
           </option>
         </select>
       </label>
+      <label class="demo__tz">
+        <span>Locale</span>
+        <select
+          id="locale-select"
+          name="locale"
+          aria-label="Display locale"
+          :value="locale"
+          @change="onLocaleChange"
+        >
+          <option v-for="l in LOCALES" :key="l.value" :value="l.value">
+            {{ l.label }}
+          </option>
+        </select>
+      </label>
+      <label class="demo__tz">
+        <span>Clock</span>
+        <select
+          id="hour12-select"
+          name="hour12"
+          aria-label="Hour cycle"
+          :value="hour12 === undefined ? 'auto' : hour12 ? '12' : '24'"
+          @change="onHour12Change"
+        >
+          <option value="auto">Auto</option>
+          <option value="12">12-hour</option>
+          <option value="24">24-hour</option>
+        </select>
+      </label>
       <span class="demo__hint">
         Drag any event to move it. Drag the all-day banners (or month cells)
         across days; drag the recurring “Daily standup” to pick an edit scope.
@@ -191,6 +236,8 @@ function onSelectSlot(): void {
     <div class="demo__cal">
       <Calendar
         :store="store"
+        :locale="locale"
+        :hour12="hour12"
         :on-event-click="onEventClick"
         :on-event-create="onEventCreate"
         :on-event-update="onEventUpdate"

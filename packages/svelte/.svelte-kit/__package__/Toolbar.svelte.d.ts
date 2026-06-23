@@ -1,4 +1,5 @@
 import type { CalendarStore, CalendarSnapshot, PlainDate } from "@calidar/core";
+import { type Formatters } from "./format.js";
 interface Props {
     store: CalendarStore;
     snapshot: CalendarSnapshot;
@@ -12,6 +13,8 @@ interface Props {
      * instead of the underlying Week state. Null/empty = use the store state.
      */
     titleDays?: PlainDate[] | null;
+    /** Locale-bound formatters (defaults to the runtime locale when omitted). */
+    formatters?: Formatters;
 }
 declare const Toolbar: import("svelte").Component<Props, {}, "">;
 type Toolbar = ReturnType<typeof Toolbar>;

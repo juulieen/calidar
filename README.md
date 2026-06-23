@@ -46,6 +46,7 @@ because that's what your users already know how to use.
 | ⚡ **Performance** | Windowed recurrence expansion (only the visible range is materialised), memoised snapshots, bounded DOM |
 | 🎨 **Themeable** | Headless core + a Google-like default theme driven entirely by `--cal-*` CSS variables |
 | 🧩 **Agnostic core** | Build a Vue / Solid / Web Component adapter against the same `subscribe`/`getSnapshot` contract |
+| 🌐 **i18n** | `Intl`-based locale-aware labels — set `locale` (e.g. `fr-FR`, `ja-JP`) and `hour12`, plus `weekStartsOn` |
 
 ## Packages
 
@@ -175,9 +176,9 @@ pnpm --filter svelte-demo dev       # http://localhost:5174
 - [x] Vue 3 adapter (`@calidar/vue`)
 - [ ] Resource / multi-calendar columns (day view side-by-side)
 - [ ] Virtualised infinite agenda
+- [x] i18n — locale-aware labels (`locale` / `hour12`) on all adapters
 - [ ] Solid adapter
 - [ ] `BYSETPOS`, `BYWEEKNO`, `BYYEARDAY`
-- [ ] i18n / localized labels & first-day-of-week presets
 
 ## License
 

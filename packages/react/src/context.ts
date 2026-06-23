@@ -12,6 +12,7 @@ import type {
   EventInstance,
   ViewModel,
 } from "@calidar/core";
+import type { Formatters } from "./format.js";
 
 /**
  * Compact-window descriptor present only when the responsive layer has
@@ -82,6 +83,12 @@ export interface CalendarContextValue extends CalendarCallbacks {
    * `compactNav.nDays` days while the compact window is active.
    */
   stepPeriod: (dir: 1 | -1) => void;
+  /**
+   * Locale-bound formatting helpers honouring the `locale` / `hour12`
+   * presentation props. Views read labels from here rather than importing the
+   * standalone helpers, so a forced locale flows through every view/toolbar.
+   */
+  formatters: Formatters;
 }
 
 export const CalendarContext = createContext<CalendarContextValue | null>(null);

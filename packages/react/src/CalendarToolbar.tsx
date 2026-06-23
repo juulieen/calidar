@@ -6,7 +6,6 @@
  */
 import { epochToPlainDate, type CalendarViewKind } from "@calidar/core";
 import { useCalendarContext } from "./context.js";
-import { formatRangeTitle } from "./format.js";
 
 interface ViewOption {
   label: string;
@@ -25,8 +24,9 @@ const VIEW_OPTIONS: ViewOption[] = [
 ];
 
 export function CalendarToolbar(): JSX.Element {
-  const { store, snapshot, effectiveView, stepPeriod } =
+  const { store, snapshot, effectiveView, stepPeriod, formatters } =
     useCalendarContext();
+  const { formatRangeTitle } = formatters;
   const { state } = snapshot;
   const { view, cursor, timeZone, visibleDays } = state;
 

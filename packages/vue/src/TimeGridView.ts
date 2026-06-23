@@ -28,7 +28,10 @@ import { useGridDrag, type ActiveDrag } from "./useGridDrag.js";
 import { useDayDrag, type ActiveDayDrag } from "./useDayDrag.js";
 import { useCommitEdit } from "./useCommitEdit.js";
 import { RecurrenceScopePopover } from "./RecurrenceScopePopover.js";
-import { formatHour, formatTime, formatWeekdayShort } from "./format.js";
+import type { Formatters } from "./format.js";
+
+type FormatTime = Formatters["formatTime"];
+type FormatWeekdayShort = Formatters["formatWeekdayShort"];
 
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const COLUMN_GAP_PCT = 4; // horizontal breathing room between overlap columns
@@ -41,7 +44,7 @@ export const TimeGridView = defineComponent({
     model: { type: Object as PropType<TimeGridViewModel>, required: true },
   },
   setup(props) {
-    const { snapshot, onEventCreate, onEventClick, onSelectSlot } =
+    const { snapshot, onEventCreate, onEventClick, onSelectSlot, formatters } =
       useCalendarContext();
 
     const edit = useCommitEdit();
@@ -161,6 +164,7 @@ export const TimeGridView = defineComponent({
     });
 
     return () => {
+      const { formatHour, formatTime, formatWeekdayShort } = formatters.value;
       const model = props.model;
       const { hourHeight, timeZone, days, allDayBands, allDayLaneCount } = model;
       const gridHeight = 24 * hourHeight;
@@ -175,7 +179,7 @@ export const TimeGridView = defineComponent({
           h(
             "div",
             { class: "cal-timegrid__day-heads" },
-            days.map((day) => renderDayHead(day)),
+            days.map((day) => renderDayHead(day, formatWeekdayShort)),
           ),
         ]),
       ];
@@ -281,6 +285,8 @@ export const TimeGridView = defineComponent({
                         timeZone,
                         drag,
                         onEventClick,
+                        formatWeekdayShort,
+                        formatTime,
                       ),
                     ),
                     renderNowLine(model, gridHeight, Math.max(snapshot.value.now, nowTick.value)),
@@ -318,7 +324,10 @@ export const TimeGridView = defineComponent({
   },
 });
 
-function renderDayHead(day: DayModel): VNode {
+function renderDayHead(
+  day: DayModel,
+  formatWeekdayShort: FormatWeekdayShort,
+): VNode {
   return h(
     "div",
     {
@@ -341,14 +350,26 @@ function renderColumn(
   timeZone: string,
   drag: ReturnType<typeof useGridDrag>,
   onEventClick: ((instance: EventInstance) => void) | undefined,
+  formatWeekdayShort: FormatWeekdayShort,
+  formatTime: FormatTime,
 ): VNode {
   const colChildren: (VNode | null)[] = day.timed.map((layout) =>
-    renderTimedEvent(layout, gridHeight, timeZone, drag, dayIndex, onEventClick),
+    renderTimedEvent(
+      layout,
+      gridHeight,
+      timeZone,
+      drag,
+      dayIndex,
+      onEventClick,
+      formatTime,
+    ),
   );
 
   const active = drag.active.value;
   if (active && active.dayIndex === dayIndex) {
-    colChildren.push(renderPreviewGhost(active, day, gridHeight, timeZone));
+    colChildren.push(
+      renderPreviewGhost(active, day, gridHeight, timeZone, formatTime),
+    );
   }
 
   return h(
@@ -377,6 +398,7 @@ function renderTimedEvent(
   drag: ReturnType<typeof useGridDrag>,
   dayIndex: number,
   onEventClick: ((instance: EventInstance) => void) | undefined,
+  formatTime: FormatTime,
 ): VNode {
   const { instance } = layout;
   const topPx = layout.top * gridHeight;
@@ -448,6 +470,7 @@ function renderPreviewGhost(
   day: DayModel,
   gridHeight: number,
   timeZone: string,
+  formatTime: FormatTime,
 ): VNode {
   const { preview } = active;
   const dayMs = day.dayEnd - day.dayStart;

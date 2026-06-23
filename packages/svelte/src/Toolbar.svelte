@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { CalendarStore, CalendarSnapshot, CalendarViewKind, PlainDate } from "@calidar/core";
   import { epochToPlainDate, startOfWeek } from "@calidar/core";
-  import { formatRangeTitle } from "./format.js";
+  import { createFormatters, type Formatters } from "./format.js";
 
   interface Props {
     store: CalendarStore;
@@ -16,8 +16,17 @@
      * instead of the underlying Week state. Null/empty = use the store state.
      */
     titleDays?: PlainDate[] | null;
+    /** Locale-bound formatters (defaults to the runtime locale when omitted). */
+    formatters?: Formatters;
   }
-  const { store, snapshot, onPrev, onNext, titleDays = null }: Props = $props();
+  const {
+    store,
+    snapshot,
+    onPrev,
+    onNext,
+    titleDays = null,
+    formatters = createFormatters(),
+  }: Props = $props();
 
   const views: { kind: CalendarViewKind; label: string }[] = [
     { kind: "day", label: "Day" },
@@ -29,6 +38,7 @@
 
   // Compute the first visible day + day-count to label the current range.
   const title = $derived.by(() => {
+    const { formatRangeTitle } = formatters;
     // Compact mode: title follows the days the parent is actually rendering.
     if (titleDays && titleDays.length > 0) {
       const first = titleDays[0]!;

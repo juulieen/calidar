@@ -9,7 +9,6 @@
 import { computed, defineComponent, h } from "vue";
 import { epochToPlainDate, type CalendarViewKind } from "@calidar/core";
 import { useCalendarContext } from "./context.js";
-import { formatRangeTitle } from "./format.js";
 
 interface ViewOption {
   label: string;
@@ -31,9 +30,10 @@ export const CalendarToolbar = defineComponent({
   name: "CalendarToolbar",
   setup() {
     const ctx = useCalendarContext();
-    const { store, snapshot, effectiveView, stepPeriod } = ctx;
+    const { store, snapshot, effectiveView, stepPeriod, formatters } = ctx;
 
     const title = computed<string>(() => {
+      const { formatRangeTitle } = formatters.value;
       const { state } = snapshot.value;
       const { view, cursor, timeZone } = state;
       const ev = effectiveView.value;

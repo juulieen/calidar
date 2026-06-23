@@ -5,7 +5,6 @@
 import { defineComponent, h, type PropType } from "vue";
 import type { AgendaViewModel, EventInstance } from "@calidar/core";
 import { useCalendarContext } from "./context.js";
-import { formatAgendaDay, formatTime } from "./format.js";
 
 export const AgendaView = defineComponent({
   name: "AgendaView",
@@ -13,9 +12,10 @@ export const AgendaView = defineComponent({
     model: { type: Object as PropType<AgendaViewModel>, required: true },
   },
   setup(props) {
-    const { onEventClick } = useCalendarContext();
+    const { onEventClick, formatters } = useCalendarContext();
 
     return () => {
+      const { formatAgendaDay, formatTime } = formatters.value;
       const model = props.model;
       const timeZone = model.timeZone;
 
