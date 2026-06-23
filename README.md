@@ -26,9 +26,10 @@ diverges. Calidar splits the hard parts from the pretty parts:
   that does the genuinely hard work: timezone-aware date maths, RFC 5545
   recurrence expansion, overlap/lane layout, and a reactive store. It renders
   **nothing**.
-- **`@calidar/react`** / **`@calidar/svelte`** — thin adapters that turn the
-  engine's view models into accessible, responsive, drag-and-drop UI. Swap the
-  theme, or build your own adapter, without touching the engine.
+- **`@calidar/react`** / **`@calidar/svelte`** / **`@calidar/solid`** — thin
+  adapters that turn the engine's view models into accessible, responsive,
+  drag-and-drop UI. Swap the theme, or build your own adapter, without touching
+  the engine.
 
 The interaction model deliberately mirrors Google Calendar and Outlook —
 because that's what your users already know how to use.
@@ -53,8 +54,8 @@ because that's what your users already know how to use.
 | [`@calidar/core`](packages/core) | The engine: types, store, selectors, datetime, recurrence, layout, drag maths |
 | [`@calidar/react`](packages/react) | React 18 adapter (`useSyncExternalStore`) |
 | [`@calidar/svelte`](packages/svelte) | Svelte 5 (runes) adapter |
-| [`examples/react-demo`](examples/react-demo) | Vite playground |
-| [`examples/svelte-demo`](examples/svelte-demo) | Vite playground |
+| [`@calidar/solid`](packages/solid) | SolidJS adapter (signals) |
+| [`examples/react-demo`](examples/react-demo) · [`svelte-demo`](examples/svelte-demo) · [`solid-demo`](examples/solid-demo) | Vite playgrounds |
 
 ## Quick start — React
 
@@ -153,9 +154,9 @@ pnpm --filter svelte-demo dev       # http://localhost:5174
 ## Roadmap
 
 - [x] In-place recurrence editing — `editRecurringEvent` ("this / this-and-following / all")
+- [x] SolidJS adapter (`@calidar/solid`)
 - [ ] Resource / multi-calendar columns (day view side-by-side)
 - [ ] Virtualised infinite agenda
-- [ ] Vue & Solid adapters
 - [ ] `BYSETPOS`, `BYWEEKNO`, `BYYEARDAY`
 - [ ] i18n / localized labels & first-day-of-week presets
 
