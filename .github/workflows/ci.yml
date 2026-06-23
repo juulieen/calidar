@@ -32,4 +32,4 @@ jobs:
         run: pnpm --filter @calidar/core test
 
       - name: Build demos
-        run: pnpm --filter ./examples/* build
+        run: pnpm --filter "./examples/*" build
