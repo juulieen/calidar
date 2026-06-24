@@ -11,7 +11,7 @@
  * Uses Pointer Events (mouse + touch + pen) with pointer capture so a gesture
  * that leaves the grid keeps tracking until release.
  */
-import { shallowRef, type Ref } from "vue";
+import { onUnmounted, shallowRef, type Ref } from "vue";
 import type { EventInstance } from "@calidar/core";
 
 /** A day column the gesture can land on. */
@@ -97,6 +97,8 @@ export function useDayDrag(opts: UseDayDragOptions): DayDragHandlers {
   let state: DayDragState | null = null;
   let startX = 0;
   let startY = 0;
+  // Tracks the active pointer-up handler so we can remove it on unmount.
+  let activeUp: (() => void) | null = null;
 
   const compute = (
     s: DayDragState,
@@ -207,8 +209,10 @@ export function useDayDrag(opts: UseDayDragOptions): DayDragHandlers {
       window.removeEventListener("pointermove", handleMove);
       window.removeEventListener("pointerup", up);
       window.removeEventListener("pointercancel", up);
+      activeUp = null;
       finish();
     };
+    activeUp = up;
     window.addEventListener("pointermove", handleMove);
     window.addEventListener("pointerup", up);
     window.addEventListener("pointercancel", up);
@@ -240,6 +244,17 @@ export function useDayDrag(opts: UseDayDragOptions): DayDragHandlers {
       instance,
     );
   };
+
+  onUnmounted(() => {
+    if (activeUp) {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", activeUp);
+      window.removeEventListener("pointercancel", activeUp);
+      activeUp = null;
+    }
+    state = null;
+    active.value = null;
+  });
 
   return { active, startCreate, startEvent };
 }

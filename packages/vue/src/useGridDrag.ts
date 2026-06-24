@@ -9,7 +9,7 @@
  * Uses Pointer Events (mouse + touch + pen) and pointer capture, so a drag that
  * leaves the grid keeps tracking until release.
  */
-import { shallowRef, type Ref } from "vue";
+import { onUnmounted, shallowRef, type Ref } from "vue";
 import {
   DragSession,
   type DragMode,
@@ -77,6 +77,8 @@ export function useGridDrag(opts: UseGridDragOptions): GridDragHandlers {
   let state: DragState | null = null;
   let startX = 0;
   let startY = 0;
+  // Tracks the active pointer-up handler so we can remove it on unmount.
+  let activeUp: (() => void) | null = null;
 
   /** Pointer client coords → instant on a given day column. */
   const instantAt = (clientY: number, dayIndex: number): number => {
@@ -157,8 +159,10 @@ export function useGridDrag(opts: UseGridDragOptions): GridDragHandlers {
       window.removeEventListener("pointermove", handleMove);
       window.removeEventListener("pointerup", up);
       window.removeEventListener("pointercancel", up);
+      activeUp = null;
       finish();
     };
+    activeUp = up;
     window.addEventListener("pointermove", handleMove);
     window.addEventListener("pointerup", up);
     window.addEventListener("pointercancel", up);
@@ -188,6 +192,17 @@ export function useGridDrag(opts: UseGridDragOptions): GridDragHandlers {
       instance,
     );
   };
+
+  onUnmounted(() => {
+    if (activeUp) {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", activeUp);
+      window.removeEventListener("pointercancel", activeUp);
+      activeUp = null;
+    }
+    state = null;
+    active.value = null;
+  });
 
   return { active, startCreate, startEvent };
 }

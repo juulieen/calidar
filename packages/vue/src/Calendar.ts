@@ -166,17 +166,19 @@ export const Calendar = defineComponent({
       }
     };
 
+    // Use getters for host callbacks so children always see the current prop
+    // value even if the parent swaps the function reference after mount.
     const ctx: CalendarContextValue = {
       store,
       snapshot,
       effectiveView,
       compactNav,
       stepPeriod,
-      onEventCreate: props.onEventCreate,
-      onEventUpdate: props.onEventUpdate,
-      onEventClick: props.onEventClick,
-      onSelectSlot: props.onSelectSlot,
-      onRecurringEdit: props.onRecurringEdit,
+      get onEventCreate() { return props.onEventCreate; },
+      get onEventUpdate() { return props.onEventUpdate; },
+      get onEventClick() { return props.onEventClick; },
+      get onSelectSlot() { return props.onSelectSlot; },
+      get onRecurringEdit() { return props.onRecurringEdit; },
     };
     provide(CalendarContextKey, ctx);
 
