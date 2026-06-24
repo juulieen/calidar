@@ -183,17 +183,128 @@ const EVENTS: CalendarEvent[] = [
   },
 ];
 
+/**
+ * Bulk event generator: scatters a large volume of events across ±6 months so
+ * the infinite, virtualised Agenda has something substantial to scroll through.
+ * Deterministic (seeded) so the demo renders identically on every reload.
+ */
+function makeBulkEvents(count: number): CalendarEvent[] {
+  // Tiny deterministic PRNG (mulberry32).
+  let seed = 0x9e3779b9;
+  const rand = (): number => {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const palette = [
+    "#1a73e8",
+    "#9334e6",
+    "#e8710a",
+    "#0b8043",
+    "#d93025",
+    "#00897b",
+    "#3f51b5",
+    "#c2185b",
+  ];
+  const titles = [
+    "Sync",
+    "Review",
+    "Workshop",
+    "Interview",
+    "Planning",
+    "Retro",
+    "Demo",
+    "Coffee chat",
+    "Deep work",
+    "Roadmap",
+    "Support shift",
+    "Release",
+  ];
+  const out: CalendarEvent[] = [];
+  for (let i = 0; i < count; i++) {
+    // Spread roughly evenly across [-180, +180] days from today.
+    const dayOffset = Math.round((rand() * 2 - 1) * 180);
+    const allDay = rand() < 0.12;
+    const color = palette[Math.floor(rand() * palette.length)]!;
+    const title = `${titles[Math.floor(rand() * titles.length)]} #${i + 1}`;
+    if (allDay) {
+      out.push({
+        id: `bulk-${i}`,
+        title,
+        start: day(dayOffset),
+        end: day(dayOffset + 1),
+        allDay: true,
+        color,
+      });
+    } else {
+      const hour = 7 + Math.floor(rand() * 11); // 07:00–17:00
+      const minute = rand() < 0.5 ? 0 : 30;
+      const durMin = 30 + Math.floor(rand() * 5) * 30; // 30–150 min
+      const startEpoch = new Date();
+      startEpoch.setDate(startEpoch.getDate() + dayOffset);
+      startEpoch.setHours(hour, minute, 0, 0);
+      const endEpoch = new Date(startEpoch.getTime() + durMin * 60_000);
+      const p = (n: number) => String(n).padStart(2, "0");
+      const fmt = (d: Date) =>
+        `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:00`;
+      out.push({
+        id: `bulk-${i}`,
+        title,
+        start: fmt(startEpoch),
+        end: fmt(endEpoch),
+        color,
+      });
+    }
+  }
+  return out;
+}
+
+/** A few recurring series so the agenda shows expanded occurrences too. */
+const RECURRING_EVENTS: CalendarEvent[] = [
+  {
+    id: "weekly-1on1",
+    title: "Weekly 1:1",
+    start: "2026-01-06T15:00:00",
+    end: "2026-01-06T15:30:00",
+    rrule: "FREQ=WEEKLY;BYDAY=TU",
+    color: "#9334e6",
+  },
+  {
+    id: "daily-checkin",
+    title: "Morning check-in",
+    start: "2026-01-05T08:30:00",
+    end: "2026-01-05T08:45:00",
+    rrule: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR",
+    color: "#0b8043",
+  },
+  {
+    id: "monthly-allhands",
+    title: "All hands",
+    start: "2026-01-15T17:00:00",
+    end: "2026-01-15T18:00:00",
+    rrule: "FREQ=MONTHLY;BYMONTHDAY=15",
+    color: "#d93025",
+  },
+];
+
+const BULK_EVENTS = makeBulkEvents(420);
+
 // Pin timed events to a fixed zone so the time-zone switcher visibly converts
 // them (Tokyo shifts every meeting by +7/+8h). All-day events stay "floating",
 // exactly like real calendars treat them.
 const PINNED_ZONE = "Europe/Paris";
-const DISPLAY_EVENTS: CalendarEvent[] = [...EVENTS, ...RESOURCE_EVENTS].map((e) =>
-  e.allDay ? e : { ...e, timeZone: PINNED_ZONE },
-);
+const DISPLAY_EVENTS: CalendarEvent[] = [
+  ...EVENTS,
+  ...RECURRING_EVENTS,
+  ...BULK_EVENTS,
+  ...RESOURCE_EVENTS,
+].map((e) => (e.allDay ? e : { ...e, timeZone: PINNED_ZONE }));
 
 export function App(): JSX.Element {
   const { store, snapshot } = useCalendar({
-    view: "week",
+    view: "agenda",
     visibleDays: 3,
     timeZone: "Europe/Paris",
     events: DISPLAY_EVENTS,

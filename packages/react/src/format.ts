@@ -72,7 +72,7 @@ export function formatDayNumber(date: PlainDate): string {
 }
 
 /** "June 2026" — month + year. */
-function formatMonthYear(date: PlainDate): string {
+export function formatMonthYear(date: PlainDate): string {
   return new Intl.DateTimeFormat(locale(), {
     month: "long",
     year: "numeric",

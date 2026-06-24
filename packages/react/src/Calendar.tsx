@@ -30,7 +30,7 @@ import {
 import { CalendarToolbar } from "./CalendarToolbar.js";
 import { TimeGridView } from "./TimeGridView.js";
 import { MonthView } from "./MonthView.js";
-import { AgendaView } from "./AgendaView.js";
+import { InfiniteAgendaView } from "./InfiniteAgendaView.js";
 import { ResourcesView } from "./ResourcesView.js";
 import { TimelineView } from "./TimelineView.js";
 
@@ -292,7 +292,7 @@ export function Calendar(props: CalendarProps): JSX.Element {
           ) : view.kind === "month" ? (
             <MonthView model={view} />
           ) : view.kind === "agenda" ? (
-            <AgendaView model={view} />
+            <InfiniteAgendaView />
           ) : (
             <TimeGridView model={view} />
           )}

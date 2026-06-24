@@ -905,6 +905,65 @@
   font-weight: 550;
 }
 
+/* ---- Infinite / virtualised agenda ------------------------------------- */
+
+/* The infinite agenda is the scroll container; its single child holds the flow
+   of day sections and virtualisation spacers. `overflow-anchor: none` stops the
+   browser from fighting our manual scroll compensation on prepend. */
+.cal-agenda--infinite {
+  overflow-anchor: none;
+  scroll-behavior: auto;
+}
+
+.cal-agenda__content {
+  position: relative;
+}
+
+/* Invisible height-reserving placeholder for an off-screen day section. Keeps
+   the scrollbar stable while the section's DOM is unmounted. */
+.cal-agenda__spacer {
+  width: 100%;
+  pointer-events: none;
+}
+
+/* Month divider drawn above the first section of each month. */
+.cal-agenda__month {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cal-text-subtle);
+  padding: 10px 0 4px;
+  margin-top: 8px;
+  border-top: 1px solid var(--cal-border);
+  background: var(--cal-bg);
+}
+
+.cal-agenda__content > div:first-child .cal-agenda__month {
+  margin-top: 0;
+  border-top: none;
+}
+
+/* Subtle accent for today's section header. */
+.cal-agenda__section--today .cal-agenda__date {
+  color: var(--cal-accent);
+}
+
+.cal-agenda__section--today .cal-agenda__date::after {
+  content: "Today";
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cal-on-accent);
+  background: var(--cal-accent);
+  padding: 1px 7px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
 /* ---- Responsive / touch ------------------------------------------------ */
 
 @media (max-width: 640px) {
