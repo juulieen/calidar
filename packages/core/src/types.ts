@@ -38,6 +38,11 @@ export interface CalendarEvent {
   rrule?: string;
   /** ISO date-times excluded from the recurrence expansion. */
   exdates?: (string | number)[];
+  /**
+   * RFC 5545 RDATE — extra occurrence start times added to the set, on top of
+   * the master/RRULE occurrences (ISO strings or epoch ms). EXDATE wins.
+   */
+  rdates?: (string | number)[];
   /** Arbitrary host data, carried through untouched. */
   meta?: Record<string, unknown>;
   /** Optional display hints; adapters/themes may use these. */

@@ -104,3 +104,12 @@ export {
   type DragMode,
   type DragPreview,
 } from "./interactions/drag.js";
+export {
+  constrainInterval,
+  intervalsOverlap,
+  hasConflict,
+  firstFreeSlot,
+  type Interval,
+  type IntervalConstraints,
+  type BusyInterval,
+} from "./interactions/constraints.js";
