@@ -24,47 +24,59 @@ The market splits into three groups:
 |---|---|---|---|---|---|---|---|
 | **License** | MIT (everything) | MIT core; **Scheduler/Resource/Timeline = paid** ($480+/dev/yr) | MIT core; **drag-drop & resize moved to Premium in v4** | MIT | MIT | MIT | Proprietary, **$480–$680+/dev** |
 | **Architecture** | **Headless engine + adapters** | Styled, vanilla + framework connectors | Styled, agnostic w/ adapters | Styled, React-only | Styled, vanilla (+ deprecated wrappers) | Styled, Svelte-based | Styled component suites |
-| **Frameworks** | React, Svelte (core is agnostic) | React, Vue, Angular, vanilla | React, Vue, Angular, Svelte, Preact | React only | Vanilla; React/Vue wrappers deprecated→monorepo | Svelte, + JS/React/Vue wrappers | React/Angular/Vue/JS |
+| **Frameworks** | **React, Svelte, Vue, Solid** (core is agnostic) | React, Vue, Angular, vanilla | React, Vue, Angular, Svelte, Preact | React only | Vanilla; React/Vue wrappers deprecated→monorepo | Svelte, + JS/React/Vue wrappers | React/Angular/Vue/JS |
 | **Runtime deps** | **Zero** | Several | Migrating to Temporal | date lib adapter required | Several | Zero | Many |
 | **Timezones** | **Native `Intl`, DST-correct, built-in** | Via plugin (moment-timezone/luxon) | Temporal-based (v4+) | **DIY** via custom accessors | Limited | Limited | Built-in |
-| **Recurrence (RRULE)** | **Built-in, windowed** | Via `rrule` plugin | Yes | **DIY** | Limited | Limited | Built-in |
-| **Drag / resize / create** | **Built-in, MIT, Pointer Events** | Yes (interaction plugin) | **Premium (v4)** | Add-on; can't drag across months | Yes | Yes | Yes |
-| **Views** | Day, N-day, Week, Month, Agenda | Day/Week/Month/List/Timeline\* | Day/Week/Month | Month/Week/Day/Agenda | Month/Week/Day | Day/Week/Month/List/Resource/Timeline | All + resource/timeline |
-| **Resource / timeline** | ❌ (roadmap) | ✅ (premium) | ✅ (premium) | ❌ | partial | ✅ | ✅ |
+| **Recurrence (RRULE)** | **Built-in, windowed — incl. BYSETPOS/BYYEARDAY/BYWEEKNO, EXDATE, RDATE, occurrence editing** | Via `rrule` plugin | Yes | **DIY** | Limited | Limited | Built-in |
+| **Drag / resize / create** | **Built-in, MIT** — timed + all-day + month bands, Pointer Events | Yes (interaction plugin) | **Premium (v4)** | Add-on; can't drag across months | Yes | Yes | Yes |
+| **Views** | Day, N-day, Week, Month, Agenda (virtualised/infinite), **Resources** | Day/Week/Month/List/Timeline\* | Day/Week/Month | Month/Week/Day/Agenda | Month/Week/Day | Day/Week/Month/List/Resource/Timeline | All + resource/timeline |
+| **Resource columns** | **✅ MIT** (per-resource day columns; React, others to follow) | ✅ (premium) | ✅ (premium) | ❌ | partial | ✅ | ✅ |
+| **i18n** | **`Intl` locale + `hour12` + `weekStartsOn`** | ✅ | ✅ | basic | ✅ | ✅ | ✅ |
 | **Theming** | Headless + `--cal-*` CSS vars | Theme system | Light/dark + themeable | One default theme, SASS vars | Themeable | Themeable | Themeable |
 | **Maturity** | **New / unproven** | Very mature, huge ecosystem | Active, growing | Mature but limited | Maintenance-mode-ish; wrappers deprecated | Active (Svelte 5 runes, late 2025) | Very mature, supported |
 | **Bundle (core)** | ~29 KB, 0 dep | Larger | Modular | Medium + date lib | Medium | Small | Large |
 
 \* FullCalendar's Timeline/Resource views are premium.
 
+> **Status note.** The feature set above reflects Calidar after PRs #1–#9 land
+> (4 adapters, full RRULE, RDATE, occurrence editing, resource columns,
+> virtualised agenda, i18n). Resource columns and the virtualised agenda ship
+> for React first; Svelte/Vue/Solid parity follows. Timeline/Gantt is still out
+> of scope.
+
 ## Where Calidar is differentiated
 
-- **Truly headless + agnostic.** FullCalendar and Schedule-X are multi-framework
-  but ship a fixed UI; react-big-calendar and Event Calendar are tied to one
-  framework. Calidar's core renders nothing and exposes a `subscribe`/
-  `getSnapshot` contract, so a Vue/Solid/Web-Component adapter is a small,
-  mechanical job — and you can fully restyle without forking.
-- **No paywall on the essentials.** Drag/resize, recurrence and timezones are
-  exactly what people hit a paywall for: FullCalendar's scheduler is premium,
-  and **Schedule-X moved drag-and-drop & resize to Premium in v4 (2026)**.
-  Calidar keeps all of it MIT.
-- **Zero dependencies, `Intl`-native timezones.** No Moment/Luxon/Temporal
-  polyfill to ship. Wall-clock times re-project per occurrence, so recurring
-  meetings stay correct across DST.
-- **Windowed recurrence.** Only occurrences inside the visible range are
-  materialised — cheaper than expanding a series up-front.
+- **Truly headless + agnostic — and proven across 4 frameworks.** FullCalendar
+  and Schedule-X are multi-framework but ship a fixed UI; react-big-calendar and
+  Event Calendar are tied to one framework. Calidar's core renders nothing and
+  exposes a `subscribe`/`getSnapshot` contract; **React, Svelte, Vue and Solid
+  adapters** all run on the same engine and look pixel-identical. You can fully
+  restyle (or write a new adapter) without forking.
+- **No paywall on the essentials.** Drag/resize/create — on timed, all-day
+  **and** month bands — plus recurrence, timezones and **resource columns** are
+  exactly what people hit a paywall for: FullCalendar's scheduler/resource views
+  are premium, and **Schedule-X moved drag-and-drop & resize to Premium in v4
+  (2026)**. Calidar keeps all of it MIT.
+- **Complete-enough RRULE, zero deps.** FREQ/INTERVAL/COUNT/UNTIL, BYDAY (incl.
+  `3MO`/`-1FR`), BYMONTHDAY, BYMONTH, **BYSETPOS, BYYEARDAY, BYWEEKNO**, plus
+  EXDATE/RDATE and "this / this-and-following / all" occurrence editing — without
+  pulling in the `rrule` library or a Temporal polyfill.
+- **`Intl`-native timezones.** Wall-clock times re-project per occurrence, so
+  recurring meetings stay correct across DST.
+- **Performance by construction.** Windowed recurrence expansion (only the
+  visible range is materialised), memoised snapshots, and a **virtualised,
+  infinitely-scrollable agenda** with bounded DOM.
 
 ## Where the alternatives still win (be honest)
 
 - **Maturity & edge cases.** FullCalendar, Toast UI and the commercial suites
-  have years of bug-fixing, i18n, accessibility passes, docs and Stack Overflow
+  have years of bug-fixing, accessibility passes, docs and Stack Overflow
   answers. Calidar is new and unproven.
-- **Resource / timeline / scheduling.** If you need swimlanes, resource columns
-  or Gantt-style timelines today, Bryntum/DayPilot/Syncfusion/FullCalendar-premium
-  do it; Calidar does not (yet).
-- **Breadth of RRULE.** Calidar implements the common subset; `BYSETPOS`,
-  `BYWEEKNO`, `BYYEARDAY` are not there yet. `rrule` (used by FullCalendar) is
-  more complete.
+- **Timeline / Gantt / advanced scheduling.** Resource *columns* now exist
+  (MIT), but Gantt-style timelines, dependencies and swimlanes are still the
+  domain of Bryntum/DayPilot/Syncfusion/FullCalendar-premium.
+- **Resource view across all adapters.** Resource columns and the virtualised
+  agenda ship for React first; Svelte/Vue/Solid parity is in progress.
 - **Support.** Commercial suites come with SLAs and paid support. Calidar is
   community/best-effort.
 - **Ecosystem.** Plugins, themes, integrations — the incumbents have them.
