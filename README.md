@@ -26,7 +26,7 @@ diverges. Calidar splits the hard parts from the pretty parts:
   that does the genuinely hard work: timezone-aware date maths, RFC 5545
   recurrence expansion, overlap/lane layout, and a reactive store. It renders
   **nothing**.
-- **`@calidar/react`** / **`@calidar/svelte`** / **`@calidar/solid`** — thin
+- **`@calidar/react`** / **`@calidar/svelte`** / **`@calidar/solid`** / **`@calidar/vue`** — thin
   adapters that turn the engine's view models into accessible, responsive,
   drag-and-drop UI. Swap the theme, or build your own adapter, without touching
   the engine.
@@ -55,7 +55,8 @@ because that's what your users already know how to use.
 | [`@calidar/react`](packages/react) | React 18 adapter (`useSyncExternalStore`) |
 | [`@calidar/svelte`](packages/svelte) | Svelte 5 (runes) adapter |
 | [`@calidar/solid`](packages/solid) | SolidJS adapter (signals) |
-| [`examples/react-demo`](examples/react-demo) · [`svelte-demo`](examples/svelte-demo) · [`solid-demo`](examples/solid-demo) | Vite playgrounds |
+| [`@calidar/vue`](packages/vue) | Vue 3 adapter (Composition API) |
+| [`examples/react-demo`](examples/react-demo) · [`svelte-demo`](examples/svelte-demo) · [`solid-demo`](examples/solid-demo) · [`vue-demo`](examples/vue-demo) | Vite playgrounds |
 
 ## Quick start — React
 
@@ -97,6 +98,24 @@ export default function App() {
 </script>
 
 <Calendar options={{ view: "week", timeZone: "Europe/Paris", weekStartsOn: 1, events }} />
+```
+
+## Quick start — Vue 3
+
+```vue
+<script setup lang="ts">
+import { Calendar } from "@calidar/vue";
+import "@calidar/vue/styles.css";
+
+const events = [
+  { id: "1", title: "Standup", start: "2026-06-22T09:30", end: "2026-06-22T09:45",
+    rrule: "FREQ=WEEKLY;BYDAY=MO,WE,FR" },
+];
+</script>
+
+<template>
+  <Calendar :options="{ view: 'week', timeZone: 'Europe/Paris', weekStartsOn: 1, events }" />
+</template>
 ```
 
 ## Using the engine directly (any framework)
@@ -156,6 +175,7 @@ pnpm --filter svelte-demo dev       # http://localhost:5174
 
 - [x] In-place recurrence editing — `editRecurringEvent` ("this / this-and-following / all")
 - [x] SolidJS adapter (`@calidar/solid`)
+- [x] Vue 3 adapter (`@calidar/vue`)
 - [x] Resource / multi-calendar columns — `computeResourceView` + React adapter (Svelte/Vue/Solid to follow)
 - [x] Virtualised infinite agenda (React) — windowed DOM + infinite scroll
 - [x] RRULE `BYSETPOS` (e.g. last weekday of the month)

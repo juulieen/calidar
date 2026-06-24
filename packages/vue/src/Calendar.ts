@@ -1,0 +1,234 @@
+/**
+ * Root calendar component (Vue port). Accepts either calendar `options` or an
+ * existing `store`, wires the host callbacks into the provided context, renders
+ * the toolbar and the active view, and provides minimal keyboard navigation.
+ */
+import {
+  computed,
+  defineComponent,
+  h,
+  onMounted,
+  onUnmounted,
+  provide,
+  ref,
+  type PropType,
+} from "vue";
+import type {
+  CalendarOptions,
+  CalendarStore,
+  ViewModel,
+} from "@calidar/core";
+import {
+  computeView,
+  addDays,
+  epochToPlainDate,
+  startOfDayEpoch,
+} from "@calidar/core";
+import { useCalendar } from "./useCalendar.js";
+import {
+  CalendarContextKey,
+  type CalendarContextValue,
+  type CompactNav,
+  type EventDraft,
+  type RecurringEditRequest,
+} from "./context.js";
+import type { CalendarEvent, EventInstance } from "@calidar/core";
+import { CalendarToolbar } from "./CalendarToolbar.js";
+import { TimeGridView } from "./TimeGridView.js";
+import { MonthView } from "./MonthView.js";
+import { AgendaView } from "./AgendaView.js";
+
+/** Width below which the time views collapse to a compact day window. */
+const COMPACT_BREAKPOINT = 640;
+/** Width below which the compact window narrows to a single day. */
+const SINGLE_DAY_BREAKPOINT = 480;
+
+export const Calendar = defineComponent({
+  name: "Calendar",
+  props: {
+    /** Calendar configuration (used to create a store if `store` is absent). */
+    options: { type: Object as PropType<CalendarOptions>, default: undefined },
+    /** An existing store to drive this calendar (overrides `options`). */
+    store: { type: Object as PropType<CalendarStore>, default: undefined },
+    /** Hide the built-in toolbar (host renders its own controls). */
+    hideToolbar: { type: Boolean, default: false },
+    /**
+     * Adapt the time views to narrow (phone) widths: below 640px a Week/N-days
+     * view collapses to a compact 1- or 3-day window, without mutating the
+     * store. Defaults to `true`.
+     */
+    responsive: { type: Boolean, default: true },
+    className: { type: String, default: undefined },
+    // Host callbacks (function props, mirroring the React adapter).
+    onEventCreate: {
+      type: Function as PropType<(draft: EventDraft) => void>,
+      default: undefined,
+    },
+    onEventUpdate: {
+      type: Function as PropType<(id: string, patch: Partial<CalendarEvent>) => void>,
+      default: undefined,
+    },
+    onEventClick: {
+      type: Function as PropType<(instance: EventInstance) => void>,
+      default: undefined,
+    },
+    onSelectSlot: {
+      type: Function as PropType<(range: { start: number; end: number }) => void>,
+      default: undefined,
+    },
+    onRecurringEdit: {
+      type: Function as PropType<(request: RecurringEditRequest) => boolean | void>,
+      default: undefined,
+    },
+  },
+  setup(props) {
+    const { store, snapshot } = useCalendar(
+      props.store ?? props.options ?? {},
+    );
+
+    const rootRef = ref<HTMLDivElement | null>(null);
+
+    // Measure the root width so the time views can collapse on narrow screens.
+    // `null` until the first measurement so we never flash the compact layout.
+    const width = ref<number | null>(null);
+    let ro: ResizeObserver | null = null;
+    let refreshTimer: ReturnType<typeof setInterval> | null = null;
+
+    onMounted(() => {
+      if (props.responsive) {
+        const el = rootRef.value;
+        if (el) {
+          const measure = (w: number): void => {
+            if (width.value !== w) width.value = w;
+          };
+          measure(el.getBoundingClientRect().width);
+          ro = new ResizeObserver((entries) => {
+            const entry = entries[0];
+            if (entry) measure(entry.contentRect.width);
+          });
+          ro.observe(el);
+        }
+      }
+      // Roll the "now"-dependent state over when the day changes.
+      refreshTimer = setInterval(() => store.refresh(), 5 * 60_000);
+    });
+
+    onUnmounted(() => {
+      ro?.disconnect();
+      if (refreshTimer) clearInterval(refreshTimer);
+    });
+
+    // Effective view model + compact navigation descriptor. The store/state are
+    // never mutated: we recompute the view from an overridden state copy, so the
+    // full Week view automatically returns once the screen widens.
+    const computed_ = computed<{
+      effectiveView: ViewModel;
+      compactNav: CompactNav | null;
+    }>(() => {
+      const snap = snapshot.value;
+      const { state, view } = snap;
+      const collapsible = view.kind === "week" || view.kind === "days";
+      const w = width.value;
+      if (
+        !props.responsive ||
+        w === null ||
+        w >= COMPACT_BREAKPOINT ||
+        !collapsible
+      ) {
+        return { effectiveView: view, compactNav: null };
+      }
+      const nDays = w < SINGLE_DAY_BREAKPOINT ? 1 : 3;
+      const compactView = computeView(
+        { ...state, view: "days", visibleDays: nDays },
+        snap.events,
+        snap.now,
+      );
+      return { effectiveView: compactView, compactNav: { nDays } };
+    });
+
+    const effectiveView = computed(() => computed_.value.effectiveView);
+    const compactNav = computed(() => computed_.value.compactNav);
+
+    // Step the cursor by one period, honouring the compact day window when the
+    // time view has been collapsed (advance N days instead of a whole week).
+    const stepPeriod = (dir: 1 | -1): void => {
+      const nav = compactNav.value;
+      if (nav) {
+        const tz = snapshot.value.state.timeZone;
+        const cursorDate = epochToPlainDate(snapshot.value.state.cursor, tz);
+        const target = addDays(cursorDate, dir * nav.nDays);
+        // Place at local midday to dodge DST edges, mirroring the core store.
+        store.setCursor(startOfDayEpoch(target, tz) + 12 * 3_600_000);
+      } else if (dir < 0) {
+        store.prev();
+      } else {
+        store.next();
+      }
+    };
+
+    // Use getters for host callbacks so children always see the current prop
+    // value even if the parent swaps the function reference after mount.
+    const ctx: CalendarContextValue = {
+      store,
+      snapshot,
+      effectiveView,
+      compactNav,
+      stepPeriod,
+      get onEventCreate() { return props.onEventCreate; },
+      get onEventUpdate() { return props.onEventUpdate; },
+      get onEventClick() { return props.onEventClick; },
+      get onSelectSlot() { return props.onSelectSlot; },
+      get onRecurringEdit() { return props.onRecurringEdit; },
+    };
+    provide(CalendarContextKey, ctx);
+
+    // Minimal keyboard navigation: arrows = prev/next period, "t" = today.
+    const onKeyDown = (e: KeyboardEvent): void => {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "SELECT" ||
+        target.tagName === "TEXTAREA"
+      ) {
+        return;
+      }
+      if (e.key === "ArrowLeft") {
+        stepPeriod(-1);
+      } else if (e.key === "ArrowRight") {
+        stepPeriod(1);
+      } else if (e.key === "t" || e.key === "T") {
+        store.today();
+      }
+    };
+
+    return () => {
+      const view = effectiveView.value;
+      const viewNode =
+        view.kind === "month"
+          ? h(MonthView, { model: view })
+          : view.kind === "agenda"
+            ? h(AgendaView, { model: view })
+            : h(TimeGridView, { model: view });
+
+      const children = [
+        props.hideToolbar ? null : h(CalendarToolbar),
+        h("div", { class: "calidar__view" }, [viewNode]),
+      ];
+
+      return h(
+        "div",
+        {
+          ref: rootRef,
+          class: `calidar${props.className ? ` ${props.className}` : ""}`,
+          tabindex: 0,
+          onKeydown: onKeyDown,
+          role: "application",
+          "aria-label": "Calendar",
+        },
+        children,
+      );
+    };
+  },
+});
+
+export type { CalendarOptions, CalendarStore };
