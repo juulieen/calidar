@@ -26,6 +26,7 @@ export type {
 // Business hours
 export {
   isWithinBusinessHours,
+  businessWindowsForDate,
   businessWindowForDate,
   normalizeBusinessHours,
 } from "./engine/businessHours.js";
