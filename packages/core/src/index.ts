@@ -14,6 +14,7 @@
 // Types
 export type {
   CalendarEvent,
+  CalendarResource,
   CalendarState,
   CalendarViewKind,
   EventInstance,
@@ -33,11 +34,14 @@ export {
 // Selectors & view models
 export {
   computeView,
+  computeResourceView,
   visibleRange,
   type ViewModel,
   type TimeGridViewModel,
   type MonthViewModel,
   type AgendaViewModel,
+  type ResourceViewModel,
+  type ResourceColumnModel,
   type DayColumnModel,
   type MonthWeekModel,
   type MonthDayModel,
@@ -100,3 +104,12 @@ export {
   type DragMode,
   type DragPreview,
 } from "./interactions/drag.js";
+export {
+  constrainInterval,
+  intervalsOverlap,
+  hasConflict,
+  firstFreeSlot,
+  type Interval,
+  type IntervalConstraints,
+  type BusyInterval,
+} from "./interactions/constraints.js";
