@@ -164,7 +164,7 @@
     resources: RESOURCES,
   });
 
-  const zones = ["Europe/Paris", "America/New_York", "Asia/Tokyo"];
+  const zones = ["Europe/Paris", "America/New_York", "Asia/Tokyo", "UTC"];
   let timeZone = $state("Europe/Paris");
 
   const locales = [

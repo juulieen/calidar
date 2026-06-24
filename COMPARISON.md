@@ -30,8 +30,8 @@ The market splits into three groups:
 | **Recurrence (RRULE)** | **Built-in, windowed — incl. BYSETPOS/BYYEARDAY/BYWEEKNO, EXDATE, RDATE, occurrence editing** | Via `rrule` plugin | Yes | **DIY** | Limited | Limited | Built-in |
 | **Drag / resize / create** | **Built-in, MIT** — timed + all-day + month bands, Pointer Events | Yes (interaction plugin) | **Premium (v4)** | Add-on; can't drag across months | Yes | Yes | Yes |
 | **Views** | Day, N-day, Week, Month, Agenda (virtualised/infinite), **Resources**, **Timeline** | Day/Week/Month/List/Timeline\* | Day/Week/Month | Month/Week/Day/Agenda | Month/Week/Day | Day/Week/Month/List/Resource/Timeline | All + resource/timeline |
-| **Resource columns** | **✅ MIT** (per-resource day columns; React, others to follow) | ✅ (premium) | ✅ (premium) | ❌ | partial | ✅ | ✅ |
-| **Resource timeline** | **✅ MIT** (resources as rows, horizontal axis: day/week/month; React) | ✅ (premium) | ✅ (premium) | ❌ | ❌ | ✅ | ✅ |
+| **Resource columns** | **✅ MIT** (per-resource day columns; all 4 adapters) | ✅ (premium) | ✅ (premium) | ❌ | partial | ✅ | ✅ |
+| **Resource timeline** | **✅ MIT** (resources as rows, horizontal axis: day/week/month; all 4 adapters) | ✅ (premium) | ✅ (premium) | ❌ | ❌ | ✅ | ✅ |
 | **i18n** | **`Intl` locale + `hour12` + `weekStartsOn`** | ✅ | ✅ | basic | ✅ | ✅ | ✅ |
 | **Theming** | Headless + `--cal-*` CSS vars | Theme system | Light/dark + themeable | One default theme, SASS vars | Themeable | Themeable | Themeable |
 | **Maturity** | **New / unproven** | Very mature, huge ecosystem | Active, growing | Mature but limited | Maintenance-mode-ish; wrappers deprecated | Active (Svelte 5 runes, late 2025) | Very mature, supported |
@@ -42,9 +42,9 @@ The market splits into three groups:
 > **Status note.** The feature set above reflects Calidar with all current PRs
 > merged (4 adapters, full RRULE, RDATE, occurrence editing, resource columns,
 > resource timeline, virtualised agenda, i18n). Resource columns, the resource
-> timeline and the virtualised agenda ship for React first; Svelte/Vue/Solid
-> parity follows. Gantt-style timelines (dependencies, swimlanes) remain out of
-> scope.
+> timeline and the virtualised agenda ship across **all four adapters** (React,
+> Svelte, Vue, Solid) — see the [live demos](https://juulieen.github.io/calidar/).
+> Gantt-style timelines (dependencies, swimlanes) remain out of scope.
 
 ## Where Calidar is differentiated
 
@@ -79,9 +79,6 @@ The market splits into three groups:
   (resources as rows, horizontal day/week/month axis) now exist (MIT), but
   Gantt-style dependencies, swimlanes and constraint solving are still the
   domain of Bryntum/DayPilot/Syncfusion/FullCalendar-premium.
-- **Resource views across all adapters.** Resource columns, the resource
-  timeline and the virtualised agenda ship for React first; Svelte/Vue/Solid
-  parity is in progress.
 - **Support.** Commercial suites come with SLAs and paid support. Calidar is
   community/best-effort.
 - **Ecosystem.** Plugins, themes, integrations — the incumbents have them.
