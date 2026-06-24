@@ -72,7 +72,7 @@ export function formatDayNumber(date: PlainDate): string {
 }
 
 /** "June 2026" — month + year. */
-function formatMonthYear(date: PlainDate): string {
+export function formatMonthYear(date: PlainDate): string {
   return new Intl.DateTimeFormat(locale(), {
     month: "long",
     year: "numeric",
@@ -117,6 +117,26 @@ export function formatRangeTitle(
     return `${first.day} ${shortMonth(first)} – ${last.day} ${shortMonth(last)} ${first.year}`;
   }
   return `${formatFullDay(first)} – ${formatFullDay(last)}`;
+}
+
+/**
+ * Axis tick label for the Timeline view. Day unit → hour ("09:00"); week →
+ * short weekday + day number ("Mon 23"); month → day number ("23"). Routed
+ * through `Intl` with the calendar's display time zone.
+ */
+export function timelineTickLabel(
+  epoch: number,
+  unit: string,
+  timeZone: string,
+): string {
+  if (unit === "day") return formatTime(epoch, timeZone);
+  const opts: Intl.DateTimeFormatOptions =
+    unit === "week"
+      ? { weekday: "short", day: "numeric", timeZone: "UTC" }
+      : { day: "numeric", timeZone: "UTC" };
+  return new Intl.DateTimeFormat(locale(), opts).format(
+    asUtcDate(epoch, timeZone),
+  );
 }
 
 function shortMonth(date: PlainDate): string {
