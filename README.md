@@ -10,6 +10,8 @@ Timezone-correct · RRULE recurrence · drag, resize & create · responsive from
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)
 
+**[▶ Live demos](https://juulieen.github.io/calidar/)** — the same calendar in React · Svelte · Vue · Solid
+
 </div>
 
 ---
