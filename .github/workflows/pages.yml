@@ -1,0 +1,71 @@
+name: Deploy demos to Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Allow the deploy job to publish to GitHub Pages via OIDC.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One Pages deploy at a time; newer pushes supersede in-flight runs.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm version is taken from the root package.json "packageManager" field.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      # Each demo is served from /calidar/<framework>/, so it must be built with
+      # a matching Vite base or its asset URLs would 404 under the project page.
+      - name: Build demos with Pages base paths
+        run: |
+          pnpm --filter react-demo  exec vite build --base=/calidar/react/
+          pnpm --filter svelte-demo exec vite build --base=/calidar/svelte/
+          pnpm --filter vue-demo    exec vite build --base=/calidar/vue/
+          pnpm --filter solid-demo  exec vite build --base=/calidar/solid/
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp .github/pages/index.html _site/index.html
+          cp -r examples/react-demo/dist  _site/react
+          cp -r examples/svelte-demo/dist _site/svelte
+          cp -r examples/vue-demo/dist    _site/vue
+          cp -r examples/solid-demo/dist  _site/solid
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

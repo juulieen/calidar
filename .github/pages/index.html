@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>Calidar — live demos</title>
+    <meta
+      name="description"
+      content="Live demos of Calidar, a headless, framework-agnostic calendar engine. Same engine, four adapters: React, Svelte, Vue, Solid."
+    />
+    <style>
+      :root {
+        --bg: #0b0f1a;
+        --panel: #131a2a;
+        --panel-2: #1a2336;
+        --line: #283146;
+        --fg: #e7ecf5;
+        --muted: #97a3b8;
+        --accent: #1a73e8;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        background:
+          radial-gradient(1200px 600px at 50% -10%, #16203a 0%, var(--bg) 60%);
+        color: var(--fg);
+        font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      main { width: 100%; max-width: 880px; padding: 72px 24px 64px; }
+      .badge {
+        display: inline-block;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 4px 12px;
+        margin-bottom: 20px;
+      }
+      h1 { font-size: clamp(2rem, 6vw, 3rem); margin: 0 0 12px; letter-spacing: -0.02em; }
+      h1 .cal { margin-right: 8px; }
+      .lede { color: var(--muted); font-size: 1.1rem; margin: 0 0 8px; }
+      .meta { color: var(--muted); font-size: 0.95rem; margin: 0 0 40px; }
+      .meta code { color: var(--fg); background: var(--panel-2); padding: 1px 6px; border-radius: 6px; }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+      }
+      a.card {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 22px;
+        transition: transform 0.12s ease, border-color 0.12s ease;
+      }
+      a.card:hover { transform: translateY(-3px); border-color: var(--accent); }
+      a.card .fw { font-size: 1.25rem; font-weight: 650; margin: 0 0 4px; }
+      a.card .pkg { color: var(--muted); font-size: 0.9rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      a.card .go { color: var(--accent); font-size: 0.9rem; margin-top: 14px; }
+      footer { color: var(--muted); font-size: 0.9rem; margin-top: 44px; }
+      footer a { color: var(--fg); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span class="badge">Live demos</span>
+      <h1><span class="cal">📅</span>Calidar</h1>
+      <p class="lede">
+        A headless, framework-agnostic calendar engine with Google / Outlook-style UX.
+      </p>
+      <p class="meta">
+        One engine — <code>@calidar/core</code>, zero dependencies — rendered by four
+        thin adapters. The demos below are the <em>same</em> calendar, framework by framework.
+      </p>
+
+      <div class="grid">
+        <a class="card" href="react/">
+          <p class="fw">React</p>
+          <p class="pkg">@calidar/react</p>
+          <p class="go">Open demo →</p>
+        </a>
+        <a class="card" href="svelte/">
+          <p class="fw">Svelte</p>
+          <p class="pkg">@calidar/svelte</p>
+          <p class="go">Open demo →</p>
+        </a>
+        <a class="card" href="vue/">
+          <p class="fw">Vue</p>
+          <p class="pkg">@calidar/vue</p>
+          <p class="go">Open demo →</p>
+        </a>
+        <a class="card" href="solid/">
+          <p class="fw">Solid</p>
+          <p class="pkg">@calidar/solid</p>
+          <p class="go">Open demo →</p>
+        </a>
+      </div>
+
+      <footer>
+        MIT-licensed · source on
+        <a href="https://github.com/juulieen/calidar">GitHub</a>.
+      </footer>
+    </main>
+  </body>
+</html>
