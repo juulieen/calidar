@@ -68,6 +68,72 @@ describe("BYSETPOS — weekly", () => {
   });
 });
 
+describe("BYSETPOS — DTSTART mid-period (RFC 5545: bound candidates before selection)", () => {
+  // DTSTART here is NOT Mon 1 Jun; the candidate set of the first period must be
+  // bounded by DTSTART before BYSETPOS picks a position.
+  function expandFrom(
+    dt: typeof dtstart,
+    rrule: string,
+    window: { start: number; end: number },
+  ) {
+    return expandRecurrence({
+      dtstart: dt,
+      durationMs: HOUR,
+      timeZone: TZ,
+      rule: parseRRule(rrule, TZ),
+      window,
+    });
+  }
+
+  it("weekly: first of MO/WE/FR with DTSTART=Wed 3 Jun keeps Wed 3 (BYSETPOS=1)", () => {
+    // Week of 3 Jun candidates Mon 1/Wed 3/Fri 5; bounded by DTSTART → Wed 3/Fri 5;
+    // pos 1 = Wed 3 (not Mon 1, which precedes DTSTART). Later weeks start Monday.
+    const dt = { ...dtstart, day: 3 }; // Wed 3 Jun
+    const occ = expandFrom(dt, "FREQ=WEEKLY;BYDAY=MO,WE,FR;BYSETPOS=1", {
+      start: Date.UTC(2026, 5, 1),
+      end: Date.UTC(2026, 6, 1),
+    });
+    expect(days(occ.map((o) => o.start))).toEqual([
+      "2026-06-03", // Wed (would be lost if BYSETPOS ran before bounding)
+      "2026-06-08", // Mon
+      "2026-06-15", // Mon
+      "2026-06-22", // Mon
+      "2026-06-29", // Mon
+    ]);
+  });
+
+  it("monthly: first Sunday with DTSTART=Mon 15 Jun is bounded to 21 Jun (BYSETPOS=1)", () => {
+    // June Sundays 7,14,21,28; bounded by day 15 → 21,28; pos 1 = 21 Jun.
+    const dt = { ...dtstart, day: 15 }; // Mon 15 Jun
+    const occ = expandFrom(dt, "FREQ=MONTHLY;BYDAY=SU;BYSETPOS=1", {
+      start: Date.UTC(2026, 5, 1),
+      end: Date.UTC(2026, 8, 1),
+    });
+    expect(days(occ.map((o) => o.start))).toEqual([
+      "2026-06-21", // 1st Sunday on/after DTSTART
+      "2026-07-05",
+      "2026-08-02",
+    ]);
+  });
+
+  it("monthly: mixed first+last Sunday with DTSTART=15 Jun (BYSETPOS=1,-1)", () => {
+    // June bounded Sundays 21,28 → first=21, last=28; later months full set.
+    const dt = { ...dtstart, day: 15 }; // Mon 15 Jun
+    const occ = expandFrom(dt, "FREQ=MONTHLY;BYDAY=SU;BYSETPOS=1,-1", {
+      start: Date.UTC(2026, 5, 1),
+      end: Date.UTC(2026, 8, 1),
+    });
+    expect(days(occ.map((o) => o.start))).toEqual([
+      "2026-06-21", // first bounded Sunday
+      "2026-06-28", // last Sunday
+      "2026-07-05", // first Sunday
+      "2026-07-26", // last Sunday
+      "2026-08-02", // first Sunday
+      "2026-08-30", // last Sunday
+    ]);
+  });
+});
+
 describe("BYSETPOS — serialization round-trip", () => {
   it("preserves BYSETPOS", () => {
     const rule = parseRRule("FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1", TZ);

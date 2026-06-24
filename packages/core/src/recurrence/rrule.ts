@@ -299,14 +299,15 @@ export function expandRecurrence(params: ExpandParams): Occurrence[] {
       (d.month < startDate.month ||
         (d.month === startDate.month && d.day < startDate.day)));
 
-  // Emit a single period's candidate dates (chronological order). BYSETPOS is
-  // applied to the full period set, then occurrences before DTSTART are dropped.
+  // Emit a single period's candidate dates (chronological order). Per RFC 5545,
+  // the candidate set is bounded by DTSTART *before* BYSETPOS selects the Nth
+  // position, so dates before DTSTART are dropped first.
   // Returns true when expansion must stop (COUNT/UNTIL reached).
   const emitPeriod = (candidates: PlainDate[]): boolean => {
+    const bounded = candidates.filter((d) => !beforeStart(d));
     const dates =
-      bysetpos && bysetpos.length > 0 ? applySetPos(candidates, bysetpos) : candidates;
+      bysetpos && bysetpos.length > 0 ? applySetPos(bounded, bysetpos) : bounded;
     for (const date of dates) {
-      if (beforeStart(date)) continue;
       if (emit(date) === "stop") return true;
     }
     return false;
