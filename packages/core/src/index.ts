@@ -16,11 +16,19 @@ export type {
   CalendarEvent,
   CalendarState,
   CalendarViewKind,
+  BusinessHours,
   EventInstance,
   TimedLayout,
   DayBand,
   EpochRange,
 } from "./types.js";
+
+// Business hours
+export {
+  isWithinBusinessHours,
+  businessWindowForDate,
+  normalizeBusinessHours,
+} from "./engine/businessHours.js";
 
 // Store
 export {

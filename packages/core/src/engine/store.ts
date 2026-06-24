@@ -9,6 +9,7 @@
  * something actually changed.
  */
 import type {
+  BusinessHours,
   CalendarEvent,
   CalendarState,
   CalendarViewKind,
@@ -40,6 +41,10 @@ export interface CalendarOptions {
   weekStartsOn?: number;
   visibleDays?: number;
   hourHeight?: number;
+  /** Snap/slot granularity in minutes (default 15). */
+  slotMinutes?: number;
+  /** Working-hours window(s). */
+  businessHours?: BusinessHours | BusinessHours[];
   events?: CalendarEvent[];
   /** Injectable clock, mainly for tests. */
   now?: () => number;
@@ -50,6 +55,7 @@ const DEFAULTS = {
   weekStartsOn: 1,
   visibleDays: 3,
   hourHeight: 48,
+  slotMinutes: 15,
 };
 
 export class CalendarStore {
@@ -69,6 +75,8 @@ export class CalendarStore {
       weekStartsOn: options.weekStartsOn ?? DEFAULTS.weekStartsOn,
       visibleDays: options.visibleDays ?? DEFAULTS.visibleDays,
       hourHeight: options.hourHeight ?? DEFAULTS.hourHeight,
+      slotMinutes: options.slotMinutes ?? DEFAULTS.slotMinutes,
+      ...(options.businessHours ? { businessHours: options.businessHours } : {}),
     };
     this.events = options.events ? [...options.events] : [];
   }
@@ -133,6 +141,14 @@ export class CalendarStore {
 
   setHourHeight(hourHeight: number): void {
     this.patchState({ hourHeight });
+  }
+
+  setSlotMinutes(slotMinutes: number): void {
+    this.patchState({ slotMinutes: Math.max(1, slotMinutes) });
+  }
+
+  setBusinessHours(businessHours: BusinessHours | BusinessHours[] | undefined): void {
+    this.patchState({ businessHours });
   }
 
   /** Move the cursor to a specific instant. */
