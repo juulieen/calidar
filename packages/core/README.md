@@ -19,6 +19,7 @@ npm i @calidar/core
 | **Recurrence** | `parseRRule`, `expandRecurrence` |
 | **Layout** | `layoutTimedColumns`, `layoutDayBands` |
 | **Interactions** | `DragSession`, `applyDrag` |
+| **ICS interop** | `parseICS`, `toICS` |
 
 ## The store
 
@@ -40,7 +41,15 @@ const snap = cal.getSnapshot();
 `setView` · `setTimeZone` · `setWeekStartsOn` · `setVisibleDays` ·
 `setHourHeight` · `setCursor` · `goToDate` · `today` · `next` / `prev` /
 `step(n)` · `setEvents` · `addEvent` · `updateEvent(id, patch)` ·
-`removeEvent(id)` · `refresh`.
+`removeEvent(id)` · `batch(fn)` · `undo` / `redo` · `refresh`.
+
+## Undo / redo
+
+Event mutations are recorded on a bounded history (`historyLimit`, default 100).
+`undo()` / `redo()` move through it; `snapshot.canUndo` / `snapshot.canRedo`
+drive toolbar buttons. Wrap a multi-step edit (e.g. a recurrence split) in
+`store.batch(() => { ... })` so it reverts in a single undo. Navigation and view
+changes are **not** recorded — only event edits.
 
 ## View models
 
@@ -77,6 +86,20 @@ const { update, remove } = editRecurringEvent({
 // "this"            -> master gains an EXDATE + a detached one-off event
 // "thisAndFollowing"-> master capped (UNTIL/COUNT) + a new series from here
 // "all"             -> the master series is shifted/patched
+```
+
+## iCalendar (.ics) interop
+
+`parseICS(text)` turns a VCALENDAR into `CalendarEvent[]`; `toICS(events, opts?)`
+serialises them back. Round-trips VEVENT with UID, SUMMARY, DTSTART/DTEND
+(zoned `TZID`, UTC `Z`, or `VALUE=DATE` all-day), RRULE, EXDATE and RDATE — so
+data flows in and out of Google / Outlook / Apple Calendar.
+
+```ts
+import { parseICS, toICS } from "@calidar/core";
+
+const events = parseICS(icsText);          // from an uploaded .ics
+const ics = toICS(events, { timeZone: "Europe/Paris" }); // download / export
 ```
 
 ## Drag maths

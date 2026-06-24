@@ -10,7 +10,7 @@
  * state/events change, so we mirror it in a `shallowRef` and only reassign on
  * subscription notifications — re-render happens solely on real change.
  */
-import { onMounted, onUnmounted, shallowRef, type Ref } from "vue";
+import { onMounted, onScopeDispose, shallowRef, type Ref } from "vue";
 import {
   createCalendar,
   type CalendarOptions,
@@ -36,13 +36,16 @@ export function useCalendar(
 
   const snapshot = shallowRef<CalendarSnapshot>(store.getSnapshot());
 
-  onMounted(() => {
-    // Sync once on mount in case the store mutated between setup and mount.
+  // Start the subscription immediately in setup() to avoid missing store
+  // updates between setup and onMounted. Clean up when the scope disposes.
+  const unsub = store.subscribe(() => {
     snapshot.value = store.getSnapshot();
-    const unsub = store.subscribe(() => {
-      snapshot.value = store.getSnapshot();
-    });
-    onUnmounted(unsub);
+  });
+  onScopeDispose(unsub);
+
+  onMounted(() => {
+    // Re-sync once on mount in case the store mutated between setup and mount.
+    snapshot.value = store.getSnapshot();
   });
 
   return { store, snapshot };

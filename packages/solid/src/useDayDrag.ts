@@ -1,5 +1,5 @@
 /**
- * Pointer-driven drag/create/resize snapped to *whole days* (Vue port).
+ * Pointer-driven drag/create/resize snapped to *whole days* (Solid port).
  *
  * Powers the time-grid all-day band and the month grid: a gesture is mapped to
  * a day-column index (via a caller-supplied `columnAt`) and the preview is
@@ -11,7 +11,7 @@
  * Uses Pointer Events (mouse + touch + pen) with pointer capture so a gesture
  * that leaves the grid keeps tracking until release.
  */
-import { onUnmounted, shallowRef, type Ref } from "vue";
+import { createSignal, type Accessor } from "solid-js";
 import type { EventInstance } from "@calidar/core";
 
 /** A day column the gesture can land on. */
@@ -60,7 +60,7 @@ export interface UseDayDragOptions {
 }
 
 export interface DayDragHandlers {
-  active: Ref<ActiveDayDrag | null>;
+  active: Accessor<ActiveDayDrag | null>;
   /** Begin a create gesture anchored on column `col`. */
   startCreate: (e: PointerEvent, col: number) => void;
   /** Begin a move/resize gesture on an existing instance occupying
@@ -93,17 +93,18 @@ function clamp(n: number, lo: number, hi: number): number {
 }
 
 export function useDayDrag(opts: UseDayDragOptions): DayDragHandlers {
-  const active = shallowRef<ActiveDayDrag | null>(null);
-  let state: DayDragState | null = null;
-  let startX = 0;
-  let startY = 0;
-  // Tracks the active pointer-up handler so we can remove it on unmount.
-  let activeUp: (() => void) | null = null;
+  const [active, setActiveState] = createSignal<ActiveDayDrag | null>(null);
+  // Mirror `active` in a plain var so the once-registered `pointerup` listener
+  // reads the latest preview instead of a stale closure (see useGridDrag).
+  let activeRef: ActiveDayDrag | null = null;
+  const setActive = (next: ActiveDayDrag | null): void => {
+    activeRef = next;
+    setActiveState(next);
+  };
+  let stateRef: DayDragState | null = null;
+  let startXY = { x: 0, y: 0 };
 
-  const compute = (
-    s: DayDragState,
-    hoverCol: number,
-  ): ActiveDayDrag | null => {
+  const compute = (s: DayDragState, hoverCol: number): ActiveDayDrag | null => {
     const cells = opts.cells();
     if (cells.length === 0) return null;
     const last = cells.length - 1;
@@ -144,10 +145,10 @@ export function useDayDrag(opts: UseDayDragOptions): DayDragHandlers {
   };
 
   const finish = (): void => {
-    const s = state;
-    state = null;
-    const current = active.value;
-    active.value = null;
+    const s = stateRef;
+    stateRef = null;
+    const current = activeRef;
+    setActive(null);
     if (!s) return;
     if (s.moved && current) {
       opts.onCommit({
@@ -162,20 +163,16 @@ export function useDayDrag(opts: UseDayDragOptions): DayDragHandlers {
   };
 
   const handleMove = (e: PointerEvent): void => {
-    const s = state;
+    const s = stateRef;
     if (!s) return;
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
+    const dx = e.clientX - startXY.x;
+    const dy = e.clientY - startXY.y;
     if (!s.moved && Math.hypot(dx, dy) > CLICK_THRESHOLD_PX) s.moved = true;
 
     const cells = opts.cells();
-    const hoverCol = clamp(
-      opts.columnAt(e.clientX, e.clientY),
-      0,
-      cells.length - 1,
-    );
+    const hoverCol = clamp(opts.columnAt(e.clientX, e.clientY), 0, cells.length - 1);
     const next = compute(s, hoverCol);
-    if (next) active.value = next;
+    if (next) setActive(next);
   };
 
   const startGesture = (
@@ -189,8 +186,7 @@ export function useDayDrag(opts: UseDayDragOptions): DayDragHandlers {
   ): void => {
     e.preventDefault();
     (e.target as Element).setPointerCapture?.(e.pointerId);
-    startX = e.clientX;
-    startY = e.clientY;
+    startXY = { x: e.clientX, y: e.clientY };
 
     const s: DayDragState = {
       mode,
@@ -201,18 +197,16 @@ export function useDayDrag(opts: UseDayDragOptions): DayDragHandlers {
       originEnd,
       moved: false,
     };
-    state = s;
+    stateRef = s;
     const init = compute(s, grabCol);
-    if (init) active.value = init;
+    if (init) setActive(init);
 
     const up = (): void => {
       window.removeEventListener("pointermove", handleMove);
       window.removeEventListener("pointerup", up);
       window.removeEventListener("pointercancel", up);
-      activeUp = null;
       finish();
     };
-    activeUp = up;
     window.addEventListener("pointermove", handleMove);
     window.addEventListener("pointerup", up);
     window.addEventListener("pointercancel", up);
@@ -234,27 +228,8 @@ export function useDayDrag(opts: UseDayDragOptions): DayDragHandlers {
       return;
     }
     e.stopPropagation();
-    startGesture(
-      e,
-      mode,
-      startCol,
-      startCol,
-      endCol,
-      instance.eventId,
-      instance,
-    );
+    startGesture(e, mode, startCol, startCol, endCol, instance.eventId, instance);
   };
-
-  onUnmounted(() => {
-    if (activeUp) {
-      window.removeEventListener("pointermove", handleMove);
-      window.removeEventListener("pointerup", activeUp);
-      window.removeEventListener("pointercancel", activeUp);
-      activeUp = null;
-    }
-    state = null;
-    active.value = null;
-  });
 
   return { active, startCreate, startEvent };
 }

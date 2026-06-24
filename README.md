@@ -26,7 +26,7 @@ diverges. Calidar splits the hard parts from the pretty parts:
   that does the genuinely hard work: timezone-aware date maths, RFC 5545
   recurrence expansion, overlap/lane layout, and a reactive store. It renders
   **nothing**.
-- **`@calidar/react`** / **`@calidar/svelte`** / **`@calidar/vue`** — thin
+- **`@calidar/react`** / **`@calidar/svelte`** / **`@calidar/solid`** / **`@calidar/vue`** — thin
   adapters that turn the engine's view models into accessible, responsive,
   drag-and-drop UI. Swap the theme, or build your own adapter, without touching
   the engine.
@@ -38,9 +38,9 @@ because that's what your users already know how to use.
 
 | | |
 |---|---|
-| 🗓️ **5 views** | Day · N-day (e.g. 3-day) · Week · Month · Agenda |
+| 🗓️ **Views** | Day · N-day (e.g. 3-day) · Week · Month · Agenda · **Resources** (per-room/person columns) |
 | 🌍 **Timezones** | Every instant is correct across DST, built on native `Intl` — no Moment/Luxon |
-| 🔁 **Recurrence** | `FREQ`, `INTERVAL`, `COUNT`, `UNTIL`, `BYDAY` (incl. `3MO`/`-1FR`), `BYMONTHDAY`, `BYMONTH`, `EXDATE` |
+| 🔁 **Recurrence** | `FREQ`, `INTERVAL`, `COUNT`, `UNTIL`, `BYDAY` (incl. `3MO`/`-1FR`), `BYMONTHDAY`, `BYMONTH`, `BYSETPOS`, `BYYEARDAY`, `BYWEEKNO`, `EXDATE`, `RDATE` |
 | ✋ **Interactions** | Drag to move, resize edges, drag-to-create — Pointer Events, so mouse + touch + pen |
 | 📱 **Responsive** | Touch targets ≥ 44px, mobile breakpoints, momentum scroll, `contain` for paint isolation |
 | ⚡ **Performance** | Windowed recurrence expansion (only the visible range is materialised), memoised snapshots, bounded DOM |
@@ -55,8 +55,9 @@ because that's what your users already know how to use.
 | [`@calidar/core`](packages/core) | The engine: types, store, selectors, datetime, recurrence, layout, drag maths |
 | [`@calidar/react`](packages/react) | React 18 adapter (`useSyncExternalStore`) |
 | [`@calidar/svelte`](packages/svelte) | Svelte 5 (runes) adapter |
+| [`@calidar/solid`](packages/solid) | SolidJS adapter (signals) |
 | [`@calidar/vue`](packages/vue) | Vue 3 adapter (Composition API) |
-| [`examples/react-demo`](examples/react-demo) · [`svelte-demo`](examples/svelte-demo) · [`vue-demo`](examples/vue-demo) | Vite playgrounds |
+| [`examples/react-demo`](examples/react-demo) · [`svelte-demo`](examples/svelte-demo) · [`solid-demo`](examples/solid-demo) · [`vue-demo`](examples/vue-demo) | Vite playgrounds |
 
 ## Quick start — React
 
@@ -148,7 +149,8 @@ interface CalendarEvent {
   allDay?: boolean;
   timeZone?: string;        // IANA; defaults to the calendar's display zone
   rrule?: string;           // "FREQ=WEEKLY;BYDAY=MO,WE"
-  exdates?: (string | number)[];
+  exdates?: (string | number)[];  // dates removed from the set
+  rdates?: (string | number)[];   // extra dates added to the set
   color?: string;
   editable?: boolean;
   meta?: Record<string, unknown>;
@@ -173,12 +175,13 @@ pnpm --filter svelte-demo dev       # http://localhost:5174
 ## Roadmap
 
 - [x] In-place recurrence editing — `editRecurringEvent` ("this / this-and-following / all")
+- [x] SolidJS adapter (`@calidar/solid`)
 - [x] Vue 3 adapter (`@calidar/vue`)
-- [ ] Resource / multi-calendar columns (day view side-by-side)
-- [ ] Virtualised infinite agenda
+- [x] Resource / multi-calendar columns — `computeResourceView` + React adapter (Svelte/Vue/Solid to follow)
+- [x] Virtualised infinite agenda (React) — windowed DOM + infinite scroll
+- [x] RRULE `BYSETPOS` (e.g. last weekday of the month)
+- [x] RRULE `BYWEEKNO`, `BYYEARDAY`
 - [x] i18n — locale-aware labels (`locale` / `hour12`) on all adapters
-- [ ] Solid adapter
-- [ ] `BYSETPOS`, `BYWEEKNO`, `BYYEARDAY`
 
 ## License
 

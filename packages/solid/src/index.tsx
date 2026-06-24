@@ -1,7 +1,7 @@
 /**
- * @calidar/react — React adapter for the headless `@calidar/core` engine.
+ * @calidar/solid — SolidJS adapter for the headless `@calidar/core` engine.
  *
- * Public surface: the `<Calendar>` root, the `useCalendar` binding hook, the
+ * Public surface: the `<Calendar>` root, the `useCalendar` binding helper, the
  * individual views/toolbar (for custom compositions), and a re-export of the
  * core types adapters commonly need.
  */
@@ -12,11 +12,8 @@ export { CalendarToolbar } from "./CalendarToolbar.js";
 export { TimeGridView } from "./TimeGridView.js";
 export { MonthView } from "./MonthView.js";
 export { AgendaView } from "./AgendaView.js";
-export { InfiniteAgendaView } from "./InfiniteAgendaView.js";
-export { ResourcesView } from "./ResourcesView.js";
-export { TimelineView } from "./TimelineView.js";
 
-// Hook
+// Binding helper
 export { useCalendar, type UseCalendarResult } from "./useCalendar.js";
 
 // Context / callback types
@@ -29,11 +26,9 @@ export {
   type EventDraft,
   type RecurrenceEditScope,
   type RecurringEditRequest,
-  type TimelineMode,
-  type TimelineUnit,
 } from "./context.js";
 
-// Drag hook (advanced)
+// Drag helpers (advanced)
 export {
   useGridDrag,
   type GridDragHandlers,
@@ -50,18 +45,6 @@ export {
 } from "./useDayDrag.js";
 export { RecurrenceScopePopover } from "./RecurrenceScopePopover.js";
 
-// Formatting helpers (locale / hour12 aware).
-export {
-  createFormatters,
-  formatTime,
-  formatHour,
-  formatWeekdayShort,
-  formatAgendaDay,
-  formatDayNumber,
-  formatRangeTitle,
-  type Formatters,
-} from "./format.js";
-
 // Re-export the most useful core types for convenience.
 export type {
   CalendarEvent,
@@ -75,12 +58,6 @@ export type {
   TimeGridViewModel,
   MonthViewModel,
   AgendaViewModel,
-  ResourceViewModel,
-  TimelineViewModel,
-  TimelineRowModel,
-  TimelineBar,
-  TimelineSlot,
-  CalendarResource,
   PlainDate,
 } from "@calidar/core";
 export { createCalendar } from "@calidar/core";
