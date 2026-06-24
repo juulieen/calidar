@@ -8,6 +8,7 @@ import {
   Calendar,
   useCalendar,
   type CalendarEvent,
+  type CalendarResource,
   type EventInstance,
 } from "@calidar/react";
 
@@ -37,6 +38,66 @@ function day(daysFromToday: number): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
+const RESOURCES: CalendarResource[] = [
+  { id: "room-a", title: "Room A", color: "#1a73e8" },
+  { id: "room-b", title: "Room B", color: "#9334e6" },
+  { id: "room-c", title: "Room C", color: "#0b8043" },
+];
+
+// Per-resource events on the focal day: overlaps within Room A, a parallel
+// booking in Room B, and an all-day hold in Room C.
+const RESOURCE_EVENTS: CalendarEvent[] = [
+  {
+    id: "res-a1",
+    title: "Sprint planning",
+    start: at(0, 9, 0),
+    end: at(0, 10, 30),
+    resourceId: "room-a",
+    color: "#1a73e8",
+  },
+  {
+    id: "res-a2",
+    title: "Vendor call",
+    start: at(0, 10, 0),
+    end: at(0, 11, 0),
+    resourceId: "room-a",
+    color: "#e8710a",
+  },
+  {
+    id: "res-b1",
+    title: "Interview",
+    start: at(0, 9, 30),
+    end: at(0, 11, 0),
+    resourceId: "room-b",
+    color: "#9334e6",
+  },
+  {
+    id: "res-b2",
+    title: "Workshop",
+    start: at(0, 14, 0),
+    end: at(0, 16, 0),
+    resourceId: "room-b",
+    color: "#3f51b5",
+  },
+  {
+    id: "res-c1",
+    title: "Reserved (setup)",
+    start: day(0),
+    end: day(1),
+    allDay: true,
+    resourceId: "room-c",
+    color: "#0b8043",
+  },
+  {
+    id: "res-c2",
+    title: "All-hands",
+    start: at(0, 13, 0),
+    end: at(0, 14, 0),
+    resourceId: "room-c",
+    color: "#d93025",
+  },
+];
+
 const EVENTS: CalendarEvent[] = [
   {
     id: "standup",
@@ -45,6 +106,7 @@ const EVENTS: CalendarEvent[] = [
     end: "2026-01-05T09:45:00",
     rrule: "FREQ=WEEKLY;BYDAY=MO,WE",
     color: "#1a73e8",
+    resourceId: "room-a",
   },
   {
     id: "design",
@@ -52,6 +114,7 @@ const EVENTS: CalendarEvent[] = [
     start: at(0, 10, 0),
     end: at(0, 11, 30),
     color: "#9334e6",
+    resourceId: "room-c",
   },
   {
     id: "overlap-1",
@@ -59,6 +122,7 @@ const EVENTS: CalendarEvent[] = [
     start: at(0, 11, 0),
     end: at(0, 12, 0),
     color: "#e8710a",
+    resourceId: "room-b",
   },
   {
     id: "lunch",
@@ -66,6 +130,15 @@ const EVENTS: CalendarEvent[] = [
     start: at(0, 12, 30),
     end: at(0, 13, 30),
     color: "#0b8043",
+    resourceId: "room-b",
+  },
+  {
+    id: "workshop",
+    title: "Team workshop",
+    start: at(0, 14, 0),
+    end: at(0, 16, 30),
+    color: "#e8710a",
+    resourceId: "room-a",
   },
   {
     id: "focus",
@@ -73,6 +146,7 @@ const EVENTS: CalendarEvent[] = [
     start: at(1, 14, 0),
     end: at(1, 17, 0),
     color: "#3f51b5",
+    resourceId: "room-c",
   },
   {
     id: "allday",
@@ -88,6 +162,7 @@ const EVENTS: CalendarEvent[] = [
     start: at(3, 9, 0),
     end: at(5, 18, 0),
     color: "#00897b",
+    resourceId: "room-a",
   },
   {
     id: "client",
@@ -95,6 +170,7 @@ const EVENTS: CalendarEvent[] = [
     start: at(1, 15, 30),
     end: at(1, 16, 0),
     color: "#1a73e8",
+    resourceId: "room-b",
   },
   {
     id: "locked",
@@ -223,6 +299,7 @@ const DISPLAY_EVENTS: CalendarEvent[] = [
   ...EVENTS,
   ...RECURRING_EVENTS,
   ...BULK_EVENTS,
+  ...RESOURCE_EVENTS,
 ].map((e) => (e.allDay ? e : { ...e, timeZone: PINNED_ZONE }));
 
 export function App(): JSX.Element {
@@ -231,6 +308,7 @@ export function App(): JSX.Element {
     visibleDays: 3,
     timeZone: "Europe/Paris",
     events: DISPLAY_EVENTS,
+    resources: RESOURCES,
   });
 
   const [lastAction, setLastAction] = useState<string>("");
@@ -258,6 +336,8 @@ export function App(): JSX.Element {
         <span className="demo__hint">
           Drag any event to move it. Drag the all-day banners (or month cells)
           across days; drag the recurring “Daily standup” to pick an edit scope.
+          Try the “Timeline” view (Day / Week / Month) for a horizontal axis with
+          rooms as rows — drag bars sideways to reschedule or onto another room.
         </span>
         <span className="demo__status">{lastAction}</span>
       </header>
