@@ -97,6 +97,7 @@ export function instancesInWindow(
           recurring,
           color,
           editable,
+          resourceId: event.resourceId,
           source: event,
         });
       }

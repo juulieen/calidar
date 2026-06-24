@@ -10,6 +10,7 @@
  */
 import type {
   CalendarEvent,
+  CalendarResource,
   CalendarState,
   CalendarViewKind,
   EpochRange,
@@ -44,6 +45,8 @@ export interface CalendarOptions {
   visibleDays?: number;
   hourHeight?: number;
   events?: CalendarEvent[];
+  /** Resources for the "resources" view. */
+  resources?: CalendarResource[];
   /** Max number of undo steps to keep (default 100). */
   historyLimit?: number;
   /** Injectable clock, mainly for tests. */
@@ -81,6 +84,7 @@ export class CalendarStore {
       weekStartsOn: options.weekStartsOn ?? DEFAULTS.weekStartsOn,
       visibleDays: options.visibleDays ?? DEFAULTS.visibleDays,
       hourHeight: options.hourHeight ?? DEFAULTS.hourHeight,
+      resources: options.resources ? [...options.resources] : [],
     };
     this.events = options.events ? [...options.events] : [];
   }
@@ -156,6 +160,10 @@ export class CalendarStore {
 
   setHourHeight(hourHeight: number): void {
     this.patchState({ hourHeight });
+  }
+
+  setResources(resources: CalendarResource[]): void {
+    this.patchState({ resources: [...resources] });
   }
 
   /** Move the cursor to a specific instant. */
