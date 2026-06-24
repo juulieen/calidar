@@ -30,6 +30,9 @@ export interface CalendarSnapshot {
   view: ViewModel;
   range: EpochRange;
   now: number;
+  /** Whether an event edit can be undone / redone (for toolbar buttons). */
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 export interface CalendarOptions {
@@ -41,6 +44,8 @@ export interface CalendarOptions {
   visibleDays?: number;
   hourHeight?: number;
   events?: CalendarEvent[];
+  /** Max number of undo steps to keep (default 100). */
+  historyLimit?: number;
   /** Injectable clock, mainly for tests. */
   now?: () => number;
 }
@@ -59,8 +64,15 @@ export class CalendarStore {
   private readonly nowFn: () => number;
   private cached: CalendarSnapshot | null = null;
 
+  // Undo/redo history of the (immutable) events array.
+  private undoStack: CalendarEvent[][] = [];
+  private redoStack: CalendarEvent[][] = [];
+  private readonly historyLimit: number;
+  private batching = false;
+
   constructor(options: CalendarOptions = {}) {
     this.nowFn = options.now ?? (() => Date.now());
+    this.historyLimit = Math.max(0, options.historyLimit ?? 100);
     const tz = options.timeZone ?? localTimeZone();
     this.state = {
       view: options.view ?? DEFAULTS.view,
@@ -91,6 +103,8 @@ export class CalendarStore {
       view: computeView(this.state, this.events, now),
       range: visibleRange(this.state),
       now,
+      canUndo: this.undoStack.length > 0,
+      canRedo: this.redoStack.length > 0,
     };
     return this.cached;
   };
@@ -100,7 +114,16 @@ export class CalendarStore {
 
   private invalidate(): void {
     this.cached = null;
+    if (this.batching) return; // a batch notifies once when it completes
     for (const listener of this.listeners) listener();
+  }
+
+  /** Push the current events onto the undo stack before an event mutation. */
+  private record(): void {
+    if (this.batching || this.historyLimit === 0) return;
+    this.undoStack.push(this.events);
+    if (this.undoStack.length > this.historyLimit) this.undoStack.shift();
+    this.redoStack = [];
   }
 
   /** Force recomputation (e.g. day rolled over to a new "today"). */
@@ -191,26 +214,77 @@ export class CalendarStore {
   // ---- Event mutations ----------------------------------------------------
 
   setEvents(events: CalendarEvent[]): void {
+    this.record();
     this.events = [...events];
     this.invalidate();
   }
 
   addEvent(event: CalendarEvent): void {
+    this.record();
     this.events = [...this.events, event];
     this.invalidate();
   }
 
   updateEvent(id: string, patch: Partial<CalendarEvent>): void {
+    this.record();
     this.events = this.events.map((e) => (e.id === id ? { ...e, ...patch } : e));
     this.invalidate();
   }
 
   removeEvent(id: string): void {
+    this.record();
     this.events = this.events.filter((e) => e.id !== id);
     this.invalidate();
   }
 
   getEvents = (): CalendarEvent[] => this.events;
+
+  // ---- Undo / redo --------------------------------------------------------
+
+  /**
+   * Group several event mutations into a single undo step (e.g. a recurrence
+   * split that upserts and removes multiple events).
+   */
+  batch(fn: () => void): void {
+    if (this.batching) {
+      fn();
+      return;
+    }
+    this.record();
+    this.batching = true;
+    try {
+      fn();
+    } finally {
+      this.batching = false;
+    }
+    this.invalidate();
+  }
+
+  canUndo(): boolean {
+    return this.undoStack.length > 0;
+  }
+
+  canRedo(): boolean {
+    return this.redoStack.length > 0;
+  }
+
+  /** Revert the last event mutation (or batch). */
+  undo(): void {
+    const prev = this.undoStack.pop();
+    if (prev === undefined) return;
+    this.redoStack.push(this.events);
+    this.events = prev;
+    this.invalidate();
+  }
+
+  /** Re-apply the last undone event mutation. */
+  redo(): void {
+    const next = this.redoStack.pop();
+    if (next === undefined) return;
+    this.undoStack.push(this.events);
+    this.events = next;
+    this.invalidate();
+  }
 }
 
 /** Convenience factory. */
