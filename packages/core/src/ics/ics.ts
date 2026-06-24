@@ -183,16 +183,35 @@ export function parseICS(ics: string): CalendarEvent[] {
 
 // ---- serialising -----------------------------------------------------------
 
+const encoder = new TextEncoder();
+
+/**
+ * Fold a content line to physical lines of ≤75 OCTETS (RFC 5545 §3.1).
+ * Continuation lines are prefixed by a single space, so they may hold ≤74
+ * octets of payload. We advance by whole code points, never splitting a
+ * multi-byte UTF-8 character or a surrogate pair.
+ */
 function foldLine(line: string): string {
-  if (line.length <= 75) return line;
-  let out = line.slice(0, 75);
-  let rest = line.slice(75);
-  while (rest.length > 74) {
-    out += `\r\n ${rest.slice(0, 74)}`;
-    rest = rest.slice(74);
+  if (encoder.encode(line).length <= 75) return line;
+  const chars = Array.from(line); // iterate by code points
+  const pieces: string[] = [];
+  let cur = "";
+  let curBytes = 0;
+  let first = true;
+  for (const ch of chars) {
+    const limit = first ? 75 : 74;
+    const chBytes = encoder.encode(ch).length;
+    if (curBytes + chBytes > limit) {
+      pieces.push(cur);
+      cur = "";
+      curBytes = 0;
+      first = false;
+    }
+    cur += ch;
+    curBytes += chBytes;
   }
-  out += `\r\n ${rest}`;
-  return out;
+  pieces.push(cur);
+  return pieces.join("\r\n ");
 }
 
 function fmtUTC(epoch: number): string {
@@ -215,14 +234,29 @@ function fmtDate(epoch: number, tz: string): string {
   return `${d.year}${p2(d.month)}${p2(d.day)}`;
 }
 
+const LOCAL_DT_RE =
+  /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2})?(?:\.\d{1,3})?$/;
+
+/**
+ * True when a host value carries floating wall-clock semantics: a bare local
+ * date-time string (no `Z`, no offset) on an event with no `timeZone`. Such
+ * values must round-trip without acquiring a UTC `Z` or a `TZID` parameter.
+ */
+function isFloating(value: string | number, hasTimeZone: boolean): boolean {
+  return !hasTimeZone && typeof value === "string" && LOCAL_DT_RE.test(value.trim());
+}
+
 /** Render a DTSTART/DTEND/EXDATE/RDATE property for one instant. */
 function dateProp(
   name: string,
   epoch: number,
   tz: string,
   allDay: boolean,
+  floating: boolean,
 ): string {
   if (allDay) return `${name};VALUE=DATE:${fmtDate(epoch, tz)}`;
+  // Floating wall-clock: emit a local DATE-TIME with no Z and no TZID.
+  if (floating) return `${name}:${fmtLocal(epoch, tz)}`;
   if (tz === "UTC") return `${name}:${fmtUTC(epoch)}`;
   return `${name};TZID=${tz}:${fmtLocal(epoch, tz)}`;
 }
@@ -248,14 +282,15 @@ export function toICS(events: CalendarEvent[], options: ToIcsOptions = {}): stri
   for (const ev of events) {
     const tz = ev.timeZone ?? defaultTz;
     const allDay = ev.allDay ?? false;
+    const floating = !allDay && isFloating(ev.start, ev.timeZone != null);
     const start = parseDateValue(ev.start, tz);
     const end = parseDateValue(ev.end, tz);
 
     lines.push("BEGIN:VEVENT");
     lines.push(`UID:${ev.id}`);
     lines.push(`SUMMARY:${escapeText(ev.title)}`);
-    lines.push(dateProp("DTSTART", start, tz, allDay));
-    lines.push(dateProp("DTEND", end, tz, allDay));
+    lines.push(dateProp("DTSTART", start, tz, allDay, floating));
+    lines.push(dateProp("DTEND", end, tz, allDay, floating));
     if (ev.rrule) lines.push(`RRULE:${ev.rrule.replace(/^RRULE:/i, "")}`);
     if (ev.exdates && ev.exdates.length) {
       const vals = ev.exdates
@@ -276,6 +311,15 @@ export function toICS(events: CalendarEvent[], options: ToIcsOptions = {}): stri
         .join(",");
       const prefix = allDay ? "RDATE;VALUE=DATE" : tz === "UTC" ? "RDATE" : `RDATE;TZID=${tz}`;
       lines.push(`${prefix}:${vals}`);
+    }
+    const meta = ev.meta as Record<string, unknown> | undefined;
+    const description = meta?.description;
+    const location = meta?.location;
+    if (typeof description === "string" && description.length) {
+      lines.push(`DESCRIPTION:${escapeText(description)}`);
+    }
+    if (typeof location === "string" && location.length) {
+      lines.push(`LOCATION:${escapeText(location)}`);
     }
     lines.push("END:VEVENT");
   }
