@@ -6,7 +6,7 @@
  * after which we run the core's pure `editRecurringEvent` and apply the
  * resulting upserts/removals to the store.
  */
-import { type CalendarStore, type EventInstance } from "@calidar/core";
+import { type CalendarEvent, type CalendarStore, type EventInstance } from "@calidar/core";
 import type { CalendarCallbacks, RecurringEditScope } from "./types.js";
 /** Bounds produced by a gesture. */
 export interface EditBounds {
@@ -14,9 +14,16 @@ export interface EditBounds {
     end: number;
 }
 /**
- * Commit a plain (non-recurring) move/resize: patch the master event and notify.
+ * Optional extra event fields folded into a commit alongside the time bounds —
+ * used by the Resources / Timeline views to reassign `resourceId` when a drag
+ * lands on a different column / row.
  */
-export declare function commitDirect(store: CalendarStore, callbacks: CalendarCallbacks, eventId: string, patch: EditBounds): void;
+export type ExtraPatch = Partial<Pick<CalendarEvent, "resourceId">>;
+/**
+ * Commit a plain (non-recurring) move/resize: patch the master event and notify.
+ * `extra` carries any non-time fields (e.g. a reassigned `resourceId`).
+ */
+export declare function commitDirect(store: CalendarStore, callbacks: CalendarCallbacks, eventId: string, patch: EditBounds, extra?: ExtraPatch): void;
 /**
  * Apply a recurring-series edit at the chosen scope. Runs the pure core
  * mutation and reconciles it against the store (upsert vs add, plus removals),
@@ -24,7 +31,7 @@ export declare function commitDirect(store: CalendarStore, callbacks: CalendarCa
  *
  * `occurrenceStart` MUST be the instance's original start (before the gesture).
  */
-export declare function applyRecurringEdit(store: CalendarStore, callbacks: CalendarCallbacks, instance: EventInstance, occurrenceStart: number, patch: EditBounds, scope: RecurringEditScope, timeZone: string): void;
+export declare function applyRecurringEdit(store: CalendarStore, callbacks: CalendarCallbacks, instance: EventInstance, occurrenceStart: number, patch: EditBounds, scope: RecurringEditScope, timeZone: string, extra?: ExtraPatch): void;
 /**
  * Route a committed gesture to the right path:
  *  - non-recurring → commit directly, return null.
@@ -32,9 +39,10 @@ export declare function applyRecurringEdit(store: CalendarStore, callbacks: Cale
  *  - recurring + no host resolution → return a pending request so the caller
  *    shows the built-in scope picker.
  */
-export declare function routeCommit(store: CalendarStore, callbacks: CalendarCallbacks, instance: EventInstance, occurrenceStart: number, patch: EditBounds, timeZone: string): {
+export declare function routeCommit(store: CalendarStore, callbacks: CalendarCallbacks, instance: EventInstance, occurrenceStart: number, patch: EditBounds, timeZone: string, extra?: ExtraPatch): {
     instance: EventInstance;
     occurrenceStart: number;
     patch: EditBounds;
+    extra: ExtraPatch;
 } | null;
 //# sourceMappingURL=recurringEdit.d.ts.map

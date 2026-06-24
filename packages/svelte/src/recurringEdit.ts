@@ -8,6 +8,7 @@
  */
 import {
   editRecurringEvent,
+  type CalendarEvent,
   type CalendarStore,
   type EventInstance,
 } from "@calidar/core";
@@ -20,15 +21,25 @@ export interface EditBounds {
 }
 
 /**
+ * Optional extra event fields folded into a commit alongside the time bounds —
+ * used by the Resources / Timeline views to reassign `resourceId` when a drag
+ * lands on a different column / row.
+ */
+export type ExtraPatch = Partial<Pick<CalendarEvent, "resourceId">>;
+
+/**
  * Commit a plain (non-recurring) move/resize: patch the master event and notify.
+ * `extra` carries any non-time fields (e.g. a reassigned `resourceId`).
  */
 export function commitDirect(
   store: CalendarStore,
   callbacks: CalendarCallbacks,
   eventId: string,
   patch: EditBounds,
+  extra: ExtraPatch = {},
 ): void {
-  store.updateEvent(eventId, { start: patch.start, end: patch.end });
+  const full = { start: patch.start, end: patch.end, ...extra };
+  store.updateEvent(eventId, full);
   callbacks.onEventUpdate?.(eventId, { start: patch.start, end: patch.end });
 }
 
@@ -47,12 +58,13 @@ export function applyRecurringEdit(
   patch: EditBounds,
   scope: RecurringEditScope,
   timeZone: string,
+  extra: ExtraPatch = {},
 ): void {
   const mutation = editRecurringEvent({
     event: instance.source,
     occurrenceStart,
     scope,
-    patch: { start: patch.start, end: patch.end },
+    patch: { start: patch.start, end: patch.end, ...extra },
     timeZone,
   });
 
@@ -83,9 +95,15 @@ export function routeCommit(
   occurrenceStart: number,
   patch: EditBounds,
   timeZone: string,
-): { instance: EventInstance; occurrenceStart: number; patch: EditBounds } | null {
+  extra: ExtraPatch = {},
+): {
+  instance: EventInstance;
+  occurrenceStart: number;
+  patch: EditBounds;
+  extra: ExtraPatch;
+} | null {
   if (!instance.recurring) {
-    commitDirect(store, callbacks, instance.eventId, patch);
+    commitDirect(store, callbacks, instance.eventId, patch, extra);
     return null;
   }
   const hostScope = callbacks.onRecurringEdit?.({
@@ -102,8 +120,9 @@ export function routeCommit(
       patch,
       hostScope,
       timeZone,
+      extra,
     );
     return null;
   }
-  return { instance, occurrenceStart, patch };
+  return { instance, occurrenceStart, patch, extra };
 }

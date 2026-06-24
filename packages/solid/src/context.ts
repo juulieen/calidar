@@ -14,6 +14,7 @@ import type {
   CalendarSnapshot,
   CalendarStore,
   EventInstance,
+  ResourceViewModel,
   ViewModel,
 } from "@calidar/core";
 
@@ -26,6 +27,29 @@ export interface CompactNav {
   nDays: number;
 }
 
+/** Axis granularity of the Timeline view (mirrors `@calidar/core`). */
+export type TimelineUnit = "day" | "week" | "month";
+
+/**
+ * State of the adapter-local "Timeline" mode. Timeline is NOT a core
+ * `CalendarViewKind`: it's a local rendering mode that never mutates
+ * `store.view`, exactly like the Resource view. When `active` is false the
+ * regular store-driven views render and `unit` is simply the last choice.
+ *
+ * Solid note: `active`/`unit` are accessor functions so reading them inside JSX
+ * tracks correctly.
+ */
+export interface TimelineMode {
+  /** Whether the Timeline view is currently rendered (local override). */
+  active: Accessor<boolean>;
+  /** Current axis granularity. */
+  unit: Accessor<TimelineUnit>;
+  /** Switch the Timeline view on/off (off returns to the store's view). */
+  setActive: (active: boolean) => void;
+  /** Choose the axis granularity (day / week / month). */
+  setUnit: (unit: TimelineUnit) => void;
+}
+
 /** A new event the user sketched out by clicking/dragging an empty slot. */
 export interface EventDraft {
   /** Absolute start instant (epoch ms, UTC). */
@@ -33,6 +57,8 @@ export interface EventDraft {
   /** Absolute end instant (epoch ms, UTC). */
   end: number;
   allDay: boolean;
+  /** Resource the slot belongs to, when drafted in the resources view. */
+  resourceId?: string;
 }
 
 /** Scope of a recurring-instance edit. Mirrors `@calidar/core`. */
@@ -59,7 +85,11 @@ export interface CalendarCallbacks {
   /** Fired on a plain click of an existing event. */
   onEventClick?: (instance: EventInstance) => void;
   /** Fired when the user selects a slot without dragging far enough to create. */
-  onSelectSlot?: (range: { start: number; end: number }) => void;
+  onSelectSlot?: (range: {
+    start: number;
+    end: number;
+    resourceId?: string;
+  }) => void;
   /**
    * Intercept the application of a recurring-instance edit. Return `true` to
    * signal you've handled the mutation yourself (the adapter then skips its
@@ -83,12 +113,22 @@ export interface CalendarContextValue {
   /** Non-null only while a compact day window is active (see {@link CompactNav}). */
   compactNav: Accessor<CompactNav | null>;
   /**
-   * Advance the cursor by one rendered period: a whole view step normally, or
-   * `compactNav.nDays` days while the compact window is active.
+   * Advance the cursor by one rendered period: a whole view step normally, one
+   * day while the resources mode is active, `compactNav.nDays` days while the
+   * compact window is active, or the timeline unit (day/week/month) while the
+   * Timeline mode is active.
    */
   stepPeriod: (dir: 1 | -1) => void;
   /** Host callbacks. */
   callbacks: CalendarCallbacks;
+  /** True while the local resources mode is active (overrides `snapshot().view`). */
+  resourcesActive: Accessor<boolean>;
+  /** Toggle the local resources mode on/off. */
+  setResourceMode: (on: boolean) => void;
+  /** The resources view model while the mode is active, else null. */
+  resourceView: Accessor<ResourceViewModel | null>;
+  /** Adapter-local Timeline view mode (see {@link TimelineMode}). */
+  timeline: TimelineMode;
 }
 
 export const CalendarContext = createContext<CalendarContextValue | null>(null);

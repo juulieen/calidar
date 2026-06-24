@@ -1005,6 +1005,339 @@
   color: var(--cal-text);
 }
 
+/* ---- Resources view ---------------------------------------------------- */
+/* Reuses the time-grid skeleton (.cal-timegrid); only the per-resource column
+   headers and the stacked all-day cells need bespoke "Quiet Ink" treatment. */
+
+.cal-resource-head {
+  flex-direction: row;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cal-text);
+  min-width: 0;
+}
+
+.cal-resource-head__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-resource-head__dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 8%, transparent);
+}
+
+/* All-day band split into one stacked cell per resource column. */
+.cal-resources__allday {
+  display: flex;
+}
+
+.cal-resources__allday-col {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 4px;
+  border-left: 1px solid var(--cal-border);
+  min-width: 0;
+}
+
+.cal-resources__allday-col:first-child {
+  border-left: none;
+}
+
+/* All-day pill inside a resource column: static (no horizontal banding). */
+.cal-resources__band {
+  position: static;
+  height: 22px;
+  left: auto;
+  width: auto;
+  top: auto;
+}
+
+/* ---- Infinite / virtualised agenda ------------------------------------- */
+
+/* The infinite agenda is the scroll container; its single child holds the flow
+   of day sections and virtualisation spacers. `overflow-anchor: none` stops the
+   browser from fighting our manual scroll compensation on prepend. */
+.cal-agenda--infinite {
+  overflow-anchor: none;
+  scroll-behavior: auto;
+}
+
+.cal-agenda__content {
+  position: relative;
+}
+
+/* Invisible height-reserving placeholder for an off-screen day section. Keeps
+   the scrollbar stable while the section's DOM is unmounted. */
+.cal-agenda__spacer {
+  width: 100%;
+  pointer-events: none;
+}
+
+/* Month divider drawn above the first section of each month. */
+.cal-agenda__month {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cal-text-subtle);
+  padding: 10px 0 4px;
+  margin-top: 8px;
+  border-top: 1px solid var(--cal-border);
+  background: var(--cal-bg);
+}
+
+.cal-agenda__content > div:first-child .cal-agenda__month {
+  margin-top: 0;
+  border-top: none;
+}
+
+/* Subtle accent for today's section header. */
+.cal-agenda__section--today .cal-agenda__date {
+  color: var(--cal-accent);
+}
+
+.cal-agenda__section--today .cal-agenda__date::after {
+  content: "Today";
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cal-on-accent);
+  background: var(--cal-accent);
+  padding: 1px 7px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+/* ---- Timeline view ----------------------------------------------------- */
+
+.cal-timeline {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  --cal-tl-res-w: 180px;
+}
+
+.cal-timeline__grid {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Frozen left column listing resources. */
+.cal-timeline__resources {
+  flex: 0 0 var(--cal-tl-res-w);
+  width: var(--cal-tl-res-w);
+  border-right: 1px solid var(--cal-border-strong);
+  background: var(--cal-bg);
+  overflow: hidden;
+  z-index: 3;
+}
+
+.cal-timeline__corner {
+  height: 40px;
+  border-bottom: 1px solid var(--cal-border);
+  background: var(--cal-surface);
+}
+
+.cal-timeline__res {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--cal-border);
+  min-height: 44px;
+  font-size: 13px;
+  color: var(--cal-text);
+}
+
+.cal-timeline__pip {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--cal-bg) 60%, transparent);
+}
+
+.cal-timeline__res-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Scrollable axis area. */
+.cal-timeline__scroll {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(24, 24, 27, 0.18) transparent;
+}
+
+.cal-timeline__scroll::-webkit-scrollbar {
+  height: 9px;
+}
+
+.cal-timeline__scroll::-webkit-scrollbar-thumb {
+  background: rgba(24, 24, 27, 0.18);
+  border-radius: 6px;
+}
+
+/* The full-width track (wider than the viewport when zoomed in). */
+.cal-timeline__track {
+  position: relative;
+  /* A comfortable minimum so day-unit hours don't crush together. */
+  min-width: 720px;
+  height: 100%;
+}
+
+/* Time axis header with graduation labels. */
+.cal-timeline__axis {
+  position: relative;
+  height: 40px;
+  border-bottom: 1px solid var(--cal-border);
+  background: var(--cal-surface);
+}
+
+.cal-timeline__tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  border-left: 1px solid var(--cal-border);
+  padding-left: 6px;
+}
+
+.cal-timeline__tick:first-child {
+  border-left: none;
+}
+
+.cal-timeline__tick-label {
+  font-size: 11px;
+  color: var(--cal-text-subtle);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cal-timeline__tick--now .cal-timeline__tick-label {
+  color: var(--cal-accent);
+  font-weight: 600;
+}
+
+/* Lane area: holds gridlines, the now marker and the rows. */
+.cal-timeline__lanes {
+  position: relative;
+}
+
+.cal-timeline__lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cal-timeline__vline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px solid var(--cal-border);
+}
+
+.cal-timeline__rows {
+  position: relative;
+  z-index: 1;
+}
+
+.cal-timeline__row {
+  position: relative;
+  border-bottom: 1px solid var(--cal-border);
+}
+
+.cal-timeline__row--drop {
+  background: var(--cal-accent-soft);
+}
+
+/* Event bar (extends the shared .cal-event base). */
+.cal-timeline__bar {
+  position: absolute;
+  height: 24px;
+  min-width: 6px;
+  flex-direction: row;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.cal-timeline__bar .cal-event__title {
+  font-size: 12px;
+}
+
+.cal-timeline__handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+  touch-action: none;
+  z-index: 2;
+}
+
+.cal-timeline__handle--start {
+  left: 0;
+}
+
+.cal-timeline__handle--end {
+  right: 0;
+}
+
+/* Now marker (vertical line spanning every row). */
+.cal-timeline__now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1.5px solid var(--cal-now);
+  z-index: 4;
+  pointer-events: none;
+}
+
+.cal-timeline__now-dot {
+  position: absolute;
+  left: -4px;
+  top: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--cal-now);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cal-now) 18%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  .cal-timeline__scroll {
+    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  }
+  .cal-timeline__scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+  }
+}
+
 /* ---- Reduced motion ---------------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {

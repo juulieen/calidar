@@ -179,10 +179,13 @@ pnpm --filter svelte-demo dev       # http://localhost:5174
 - [x] In-place recurrence editing — `editRecurringEvent` ("this / this-and-following / all")
 - [x] SolidJS adapter (`@calidar/solid`)
 - [x] Vue 3 adapter (`@calidar/vue`)
-- [x] Resource / multi-calendar columns — `computeResourceView` + React adapter (Svelte/Vue/Solid to follow)
-- [x] Virtualised infinite agenda (React) — windowed DOM + infinite scroll
-- [x] RRULE `BYSETPOS` (e.g. last weekday of the month)
-- [x] RRULE `BYWEEKNO`, `BYYEARDAY`
+- [x] Resource / multi-calendar columns — `computeResourceView`, **all adapters**
+- [x] Timeline view (resources as rows, horizontal axis) — `computeTimelineView`, **all adapters**
+- [x] Virtualised infinite agenda — windowed DOM + infinite scroll, **all adapters**
+- [x] RRULE `BYSETPOS`, `BYWEEKNO`, `BYYEARDAY` · EXDATE · RDATE
+- [x] iCalendar `.ics` import/export (`parseICS` / `toICS`)
+- [x] Undo/redo with `batch()` grouping
+- [x] Constraints (snap / min-max / bounds / no-overlap) + business hours + slot granularity
 - [x] i18n — locale-aware labels (`locale` / `hour12`) on all adapters
 
 ## License

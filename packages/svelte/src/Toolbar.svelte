@@ -1,5 +1,12 @@
 <script lang="ts">
-  import type { CalendarStore, CalendarSnapshot, CalendarViewKind, PlainDate } from "@calidar/core";
+  import type {
+    CalendarStore,
+    CalendarSnapshot,
+    CalendarViewKind,
+    PlainDate,
+    ResourceViewModel,
+    TimelineUnit,
+  } from "@calidar/core";
   import { epochToPlainDate, startOfWeek } from "@calidar/core";
   import { createFormatters, type Formatters } from "./format.js";
 
@@ -18,6 +25,22 @@
     titleDays?: PlainDate[] | null;
     /** Locale-bound formatters (defaults to the runtime locale when omitted). */
     formatters?: Formatters;
+
+    // ---- Adapter-local modes (not store views) ----
+    /** True while the Resources mode is active (overrides the store view). */
+    resourcesActive?: boolean;
+    /** The resources view model while the mode is active, else null. */
+    resourceView?: ResourceViewModel | null;
+    /** Toggle the Resources mode. */
+    onResourceMode?: (on: boolean) => void;
+    /** True while the Timeline mode is active. */
+    timelineActive?: boolean;
+    /** Current Timeline axis unit. */
+    timelineUnit?: TimelineUnit;
+    /** Toggle the Timeline mode on/off. */
+    onTimelineActive?: (on: boolean) => void;
+    /** Choose the Timeline axis unit (also activates the mode). */
+    onTimelineUnit?: (unit: TimelineUnit) => void;
   }
   const {
     store,
@@ -26,6 +49,13 @@
     onNext,
     titleDays = null,
     formatters = createFormatters(),
+    resourcesActive = false,
+    resourceView = null,
+    onResourceMode,
+    timelineActive = false,
+    timelineUnit = "day",
+    onTimelineActive,
+    onTimelineUnit,
   }: Props = $props();
 
   const views: { kind: CalendarViewKind; label: string }[] = [
@@ -36,36 +66,61 @@
     { kind: "agenda", label: "Agenda" },
   ];
 
-  // Compute the first visible day + day-count to label the current range.
+  const TIMELINE_UNITS: { label: string; unit: TimelineUnit }[] = [
+    { label: "Day", unit: "day" },
+    { label: "Week", unit: "week" },
+    { label: "Month", unit: "month" },
+  ];
+
+  const hasResources = $derived(snapshot.state.resources.length > 0);
+
+  // Compute the title from what's actually rendered.
   const title = $derived.by(() => {
     const { formatRangeTitle } = formatters;
+    const { state } = snapshot;
+    const tz = state.timeZone;
+    const cursorDate = epochToPlainDate(state.cursor, tz);
+
+    if (resourceView) {
+      return formatRangeTitle("day", resourceView.date, 1);
+    }
+    if (timelineActive) {
+      if (timelineUnit === "day") return formatRangeTitle("day", cursorDate, 1);
+      if (timelineUnit === "month") return formatRangeTitle("month", cursorDate, 0);
+      const first = startOfWeek(cursorDate, state.weekStartsOn);
+      return formatRangeTitle("week", first, 7);
+    }
     // Compact mode: title follows the days the parent is actually rendering.
     if (titleDays && titleDays.length > 0) {
       const first = titleDays[0]!;
       const count = titleDays.length;
       return formatRangeTitle(count === 1 ? "day" : "days", first, count);
     }
-    const { state } = snapshot;
-    const tz = state.timeZone;
-    const cursor = epochToPlainDate(state.cursor, tz);
     switch (state.view) {
       case "day":
-        return formatRangeTitle("day", cursor, 1);
+        return formatRangeTitle("day", cursorDate, 1);
       case "days":
-        return formatRangeTitle("days", cursor, Math.max(1, state.visibleDays));
+        return formatRangeTitle("days", cursorDate, Math.max(1, state.visibleDays));
       case "week":
-        return formatRangeTitle("week", startOfWeek(cursor, state.weekStartsOn), 7);
+        return formatRangeTitle("week", startOfWeek(cursorDate, state.weekStartsOn), 7);
       case "month":
-        return formatRangeTitle("month", cursor, 1);
+        return formatRangeTitle("month", cursorDate, 1);
       case "agenda":
-        return formatRangeTitle("agenda", cursor, 30);
+        // Infinite agenda is centred on the cursor: label it by the cursor month.
+        return formatRangeTitle("month", cursorDate, 0);
     }
   });
 
   function selectView(kind: CalendarViewKind): void {
+    // Leaving a local mode hands control back to the store view.
+    onResourceMode?.(false);
+    onTimelineActive?.(false);
     if (kind === "days") store.setVisibleDays(3);
     store.setView(kind);
   }
+
+  const isViewActive = (kind: CalendarViewKind): boolean =>
+    !resourcesActive && !timelineActive && snapshot.state.view === kind;
 
   const prev = (): void => (onPrev ? onPrev() : store.prev());
   const next = (): void => (onNext ? onNext() : store.next());
@@ -94,12 +149,60 @@
       <button
         type="button"
         class="cal-btn cal-view-btn"
-        class:cal-view-btn--active={snapshot.state.view === v.kind}
-        aria-pressed={snapshot.state.view === v.kind}
+        class:cal-view-btn--active={isViewActive(v.kind)}
+        aria-pressed={isViewActive(v.kind)}
         onclick={() => selectView(v.kind)}
       >
         {v.label}
       </button>
     {/each}
+
+    {#if hasResources}
+      <button
+        type="button"
+        class="cal-btn cal-view-btn"
+        class:cal-view-btn--active={resourcesActive}
+        aria-pressed={resourcesActive}
+        aria-label="Resources"
+        onclick={() => {
+          onTimelineActive?.(false);
+          onResourceMode?.(true);
+        }}
+      >
+        Resources
+      </button>
+    {/if}
+
+    <button
+      type="button"
+      class="cal-btn cal-view-btn"
+      class:cal-view-btn--active={timelineActive}
+      aria-pressed={timelineActive}
+      aria-label="Timeline"
+      onclick={() => {
+        onResourceMode?.(false);
+        onTimelineActive?.(!timelineActive);
+      }}
+    >
+      Timeline
+    </button>
   </div>
+
+  <!-- Timeline axis-granularity sub-selector (only while Timeline is on). -->
+  {#if timelineActive}
+    <div class="cal-toolbar__units" role="group" aria-label="Timeline unit">
+      {#each TIMELINE_UNITS as u (u.unit)}
+        <button
+          type="button"
+          class="cal-btn cal-view-btn"
+          class:cal-view-btn--active={timelineUnit === u.unit}
+          aria-pressed={timelineUnit === u.unit}
+          aria-label={`Timeline ${u.label}`}
+          onclick={() => onTimelineUnit?.(u.unit)}
+        >
+          {u.label}
+        </button>
+      {/each}
+    </div>
+  {/if}
 </div>

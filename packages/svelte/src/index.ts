@@ -7,6 +7,9 @@ export { default as Toolbar } from "./Toolbar.svelte";
 export { default as TimeGridView } from "./TimeGridView.svelte";
 export { default as MonthView } from "./MonthView.svelte";
 export { default as AgendaView } from "./AgendaView.svelte";
+export { default as InfiniteAgendaView } from "./InfiniteAgendaView.svelte";
+export { default as ResourcesView } from "./ResourcesView.svelte";
+export { default as TimelineView } from "./TimelineView.svelte";
 
 // Reactivity bridge.
 export { createCalendarState, type CalendarState } from "./calendarState.svelte.js";
@@ -32,6 +35,7 @@ export {
   applyRecurringEdit,
   routeCommit,
   type EditBounds,
+  type ExtraPatch,
 } from "./recurringEdit.js";
 export { default as RecurringScopeDialog } from "./RecurringScopeDialog.svelte";
 
@@ -52,7 +56,9 @@ export {
   formatWeekdayShort,
   formatAgendaDay,
   formatDayNumber,
+  formatMonthYear,
   formatRangeTitle,
+  timelineTickLabel,
   type Formatters,
 } from "./format.js";
 
@@ -60,8 +66,12 @@ export {
 export type {
   CalendarEvent,
   CalendarOptions,
+  CalendarResource,
   CalendarSnapshot,
   CalendarStore,
   CalendarViewKind,
   EventInstance,
+  ResourceViewModel,
+  TimelineViewModel,
+  TimelineUnit,
 } from "@calidar/core";

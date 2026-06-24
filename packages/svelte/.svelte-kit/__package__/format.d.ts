@@ -47,10 +47,18 @@ export declare function formatWeekdayShort(date: PlainDate): string;
 export declare function formatAgendaDay(date: PlainDate): string;
 /** Day-of-month number, e.g. "23". */
 export declare function formatDayNumber(date: PlainDate): string;
+/** "June 2026" — month + year. */
+export declare function formatMonthYear(date: PlainDate): string;
 /**
  * Human-readable label for a visible date range, picked to match the active
  * view. `first` is the first visible day; `count` the number of days a time
  * grid covers (ignored for month).
  */
 export declare function formatRangeTitle(view: string, first: PlainDate, count: number): string;
+/**
+ * Axis tick label for the Timeline view. Day unit → hour ("09:00"); week →
+ * short weekday + day number ("Mon 23"); month → day number ("23"). Routed
+ * through `Intl` with the calendar's display time zone.
+ */
+export declare function timelineTickLabel(epoch: number, unit: string, timeZone: string): string;
 //# sourceMappingURL=format.d.ts.map

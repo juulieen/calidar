@@ -2,16 +2,29 @@
   import type {
     CalendarOptions,
     CalendarStore,
+    ResourceViewModel,
     TimeGridViewModel,
+    TimelineUnit,
+    TimelineViewModel,
   } from "@calidar/core";
-  import { computeView, addDays, startOfDayEpoch, epochToPlainDate } from "@calidar/core";
+  import {
+    computeView,
+    computeResourceView,
+    computeTimelineView,
+    addDays,
+    addMonths,
+    startOfDayEpoch,
+    epochToPlainDate,
+  } from "@calidar/core";
   import { createCalendarState } from "./calendarState.svelte.js";
   import { createFormatters } from "./format.js";
   import type { CalendarCallbacks } from "./types.js";
   import Toolbar from "./Toolbar.svelte";
   import TimeGridView from "./TimeGridView.svelte";
   import MonthView from "./MonthView.svelte";
-  import AgendaView from "./AgendaView.svelte";
+  import InfiniteAgendaView from "./InfiniteAgendaView.svelte";
+  import ResourcesView from "./ResourcesView.svelte";
+  import TimelineView from "./TimelineView.svelte";
 
   interface Props extends CalendarCallbacks {
     /** Provide options to create a store, or an existing store to share one. */
@@ -43,37 +56,72 @@
     onEventUpdate,
     onEventClick,
     onSelectSlot,
+    onRecurringEdit,
     responsive = true,
     locale,
     hour12,
   }: Props = $props();
 
-  // Presentation-only formatters bound to the locale/hour12 props, threaded to
-  // the toolbar and every view so a forced locale flows through all labels.
+  // Presentation-only formatters bound to the locale/hour12 props.
   const formatters = $derived(createFormatters(locale, hour12));
 
-  // Resolve the calendar exactly once during init. Reading the store/options
-  // here is intentional: like React's useCalendar, we never swap the store
-  // after mount — use store actions to mutate state instead.
+  // Resolve the calendar exactly once during init.
   // svelte-ignore state_referenced_locally
   const cal = createCalendarState(externalStore ?? options ?? {});
 
-  // Callbacks stay reactive so a host can swap handlers after mount.
   const callbacks = $derived<CalendarCallbacks>({
     onEventCreate,
     onEventUpdate,
     onEventClick,
     onSelectSlot,
+    onRecurringEdit,
   });
 
   const snapshot = $derived(cal.snapshot);
 
   let rootEl: HTMLDivElement | undefined = $state();
 
-  // ---- Responsive measurement ---------------------------------------------
-  // Measured width of the root container. 0 until the observer fires.
-  let rootWidth = $state(0);
+  // ---- Adapter-local modes (not store views) ------------------------------
+  // Resources mode: a per-resource grid for the focal day. Auto-clears if the
+  // calendar ends up with no resources to show.
+  let resourceMode = $state(false);
+  const hasResources = $derived(snapshot.state.resources.length > 0);
+  const resourcesActive = $derived(resourceMode && hasResources);
 
+  // Timeline mode: a horizontal time axis with resources as rows. Never mutates
+  // `store.view`; we render a separate view model when active.
+  let timelineActive = $state(false);
+  let timelineUnit = $state<TimelineUnit>("day");
+
+  const resourceView = $derived.by<ResourceViewModel | null>(() => {
+    if (!resourcesActive) return null;
+    return computeResourceView(snapshot.state, snapshot.events, snapshot.now);
+  });
+
+  const timelineView = $derived.by<TimelineViewModel | null>(() => {
+    if (!timelineActive) return null;
+    return computeTimelineView(
+      snapshot.state,
+      snapshot.events,
+      { unit: timelineUnit },
+      snapshot.now,
+    );
+  });
+
+  function setResourceMode(on: boolean): void {
+    resourceMode = on;
+  }
+  function setTimelineActive(on: boolean): void {
+    timelineActive = on;
+  }
+  function setTimelineUnit(unit: TimelineUnit): void {
+    // Selecting an explicit unit also activates the timeline.
+    timelineUnit = unit;
+    timelineActive = true;
+  }
+
+  // ---- Responsive measurement ---------------------------------------------
+  let rootWidth = $state(0);
   $effect(() => {
     const el = rootEl;
     if (!el || !responsive) return;
@@ -86,21 +134,17 @@
     return () => ro.disconnect();
   });
 
-  // Compact applies only to the time-grid views (week/days) on a narrow screen.
-  // month/agenda/day always render as-is.
+  // Compact applies only to the time-grid views (week/days) on a narrow screen
+  // and only when no local mode is active.
   const compact = $derived.by(() => {
-    if (!responsive) return false;
+    if (!responsive || resourcesActive || timelineActive) return false;
     if (rootWidth === 0 || rootWidth >= 640) return false;
     const v = snapshot.state.view;
     return v === "week" || v === "days";
   });
 
-  // 1 day under 480px, otherwise 3 — a Google-Agenda-style compact window.
   const compactDays = $derived(rootWidth < 480 ? 1 : 3);
 
-  // Effective time-grid view model. In compact mode we recompute a "days"
-  // window from the SAME snapshot without ever mutating the store, so the real
-  // Week state is preserved and restored when the screen widens.
   const effectiveTimeGrid = $derived.by<TimeGridViewModel | null>(() => {
     if (!compact) return null;
     const snap = snapshot;
@@ -109,11 +153,10 @@
       snap.events,
       snap.now,
     );
-    // computeView returns a TimeGridViewModel for the "days" view.
     return vm as TimeGridViewModel;
   });
 
-  // ---- Compact navigation (shift by N days, DST-safe) ---------------------
+  // ---- Navigation ---------------------------------------------------------
   function shiftCursorDays(n: number): void {
     const tz = snapshot.state.timeZone;
     const date = epochToPlainDate(snapshot.state.cursor, tz);
@@ -121,30 +164,58 @@
     cal.store.setCursor(startOfDayEpoch(target, tz) + 12 * 3_600_000);
   }
 
-  // Toolbar nav handlers: compact steps by N days, otherwise the store's
-  // view-sized prev/next.
-  const onPrev = $derived(() =>
-    compact ? shiftCursorDays(-compactDays) : cal.store.prev(),
-  );
-  const onNext = $derived(() =>
-    compact ? shiftCursorDays(compactDays) : cal.store.next(),
+  // Step the cursor by one rendered period. Resources/Timeline navigate by their
+  // own unit; compact steps by N days; otherwise the store's view-sized step.
+  function stepPeriod(dir: 1 | -1): void {
+    if (resourcesActive) {
+      shiftCursorDays(dir);
+      return;
+    }
+    if (timelineActive) {
+      const tz = snapshot.state.timeZone;
+      const date = epochToPlainDate(snapshot.state.cursor, tz);
+      const target =
+        timelineUnit === "day"
+          ? addDays(date, dir)
+          : timelineUnit === "week"
+            ? addDays(date, dir * 7)
+            : addMonths(date, dir);
+      cal.store.setCursor(startOfDayEpoch(target, tz) + 12 * 3_600_000);
+      return;
+    }
+    if (compact) {
+      shiftCursorDays(dir * compactDays);
+    } else if (dir < 0) {
+      cal.store.prev();
+    } else {
+      cal.store.next();
+    }
+  }
+
+  const onPrev = $derived(() => stepPeriod(-1));
+  const onNext = $derived(() => stepPeriod(1));
+
+  // Title days reflect the compact range actually on screen. Null otherwise.
+  const titleDays = $derived(
+    compact ? (effectiveTimeGrid?.days.map((d) => d.date) ?? null) : null,
   );
 
-  // Pass the effective compact days to the Toolbar so the title reflects the
-  // range actually on screen (e.g. "23–25 June"). Null outside compact mode.
-  const titleDays = $derived(effectiveTimeGrid?.days.map((d) => d.date) ?? null);
+  // Roll the "now"-dependent state over when the day changes (cheap interval).
+  $effect(() => {
+    const id = setInterval(() => cal.store.refresh(), 5 * 60_000);
+    return () => clearInterval(id);
+  });
 
-  // Minimal keyboard nav: arrows = period, "t" = today. Scoped to when focus is
-  // within the calendar root so it never hijacks the rest of the page.
+  // Minimal keyboard nav: arrows = period, "t" = today.
   function onKeydown(e: KeyboardEvent): void {
     const target = e.target as HTMLElement | null;
     if (!rootEl || !target || !rootEl.contains(target)) return;
     if (["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
     if (e.key === "ArrowLeft") {
-      onPrev();
+      stepPeriod(-1);
       e.preventDefault();
     } else if (e.key === "ArrowRight") {
-      onNext();
+      stepPeriod(1);
       e.preventDefault();
     } else if (e.key === "t" || e.key === "T") {
       cal.store.today();
@@ -164,13 +235,43 @@
   role="application"
   aria-label="Calendar"
 >
-  <Toolbar store={cal.store} {snapshot} {onPrev} {onNext} {titleDays} {formatters} />
+  <Toolbar
+    store={cal.store}
+    {snapshot}
+    {onPrev}
+    {onNext}
+    {titleDays}
+    {formatters}
+    {resourcesActive}
+    {resourceView}
+    onResourceMode={setResourceMode}
+    {timelineActive}
+    {timelineUnit}
+    onTimelineActive={setTimelineActive}
+    onTimelineUnit={setTimelineUnit}
+  />
 
   <div class="cal-body">
-    {#if snapshot.view.kind === "month"}
+    {#if resourceView}
+      <ResourcesView
+        store={cal.store}
+        view={resourceView}
+        now={snapshot.now}
+        {callbacks}
+        {formatters}
+      />
+    {:else if timelineView}
+      <TimelineView
+        store={cal.store}
+        view={timelineView}
+        now={snapshot.now}
+        {callbacks}
+        {formatters}
+      />
+    {:else if snapshot.view.kind === "month"}
       <MonthView store={cal.store} view={snapshot.view} {callbacks} {formatters} />
     {:else if snapshot.view.kind === "agenda"}
-      <AgendaView view={snapshot.view} now={snapshot.now} {callbacks} {formatters} />
+      <InfiniteAgendaView {snapshot} {callbacks} {formatters} />
     {:else if compact && effectiveTimeGrid}
       <TimeGridView
         store={cal.store}

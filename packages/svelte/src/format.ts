@@ -192,6 +192,15 @@ export function formatDayNumber(date: PlainDate): string {
   return defaultFormatters.formatDayNumber(date);
 }
 
+/** "June 2026" — month + year. */
+export function formatMonthYear(date: PlainDate): string {
+  return new Intl.DateTimeFormat(runtimeLocale(), {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(utcFromPlain(date));
+}
+
 /**
  * Human-readable label for a visible date range, picked to match the active
  * view. `first` is the first visible day; `count` the number of days a time
@@ -203,4 +212,24 @@ export function formatRangeTitle(
   count: number,
 ): string {
   return defaultFormatters.formatRangeTitle(view, first, count);
+}
+
+/**
+ * Axis tick label for the Timeline view. Day unit → hour ("09:00"); week →
+ * short weekday + day number ("Mon 23"); month → day number ("23"). Routed
+ * through `Intl` with the calendar's display time zone.
+ */
+export function timelineTickLabel(
+  epoch: number,
+  unit: string,
+  timeZone: string,
+): string {
+  if (unit === "day") return formatTime(epoch, timeZone);
+  const opts: Intl.DateTimeFormatOptions =
+    unit === "week"
+      ? { weekday: "short", day: "numeric", timeZone: "UTC" }
+      : { day: "numeric", timeZone: "UTC" };
+  return new Intl.DateTimeFormat(runtimeLocale(), opts).format(
+    asUtcDate(epoch, timeZone),
+  );
 }

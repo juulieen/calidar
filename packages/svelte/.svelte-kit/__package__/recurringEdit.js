@@ -9,9 +9,11 @@
 import { editRecurringEvent, } from "@calidar/core";
 /**
  * Commit a plain (non-recurring) move/resize: patch the master event and notify.
+ * `extra` carries any non-time fields (e.g. a reassigned `resourceId`).
  */
-export function commitDirect(store, callbacks, eventId, patch) {
-    store.updateEvent(eventId, { start: patch.start, end: patch.end });
+export function commitDirect(store, callbacks, eventId, patch, extra = {}) {
+    const full = { start: patch.start, end: patch.end, ...extra };
+    store.updateEvent(eventId, full);
     callbacks.onEventUpdate?.(eventId, { start: patch.start, end: patch.end });
 }
 /**
@@ -21,12 +23,12 @@ export function commitDirect(store, callbacks, eventId, patch) {
  *
  * `occurrenceStart` MUST be the instance's original start (before the gesture).
  */
-export function applyRecurringEdit(store, callbacks, instance, occurrenceStart, patch, scope, timeZone) {
+export function applyRecurringEdit(store, callbacks, instance, occurrenceStart, patch, scope, timeZone, extra = {}) {
     const mutation = editRecurringEvent({
         event: instance.source,
         occurrenceStart,
         scope,
-        patch: { start: patch.start, end: patch.end },
+        patch: { start: patch.start, end: patch.end, ...extra },
         timeZone,
     });
     const ids = new Set(store.getEvents().map((e) => e.id));
@@ -50,9 +52,9 @@ export function applyRecurringEdit(store, callbacks, instance, occurrenceStart, 
  *  - recurring + no host resolution → return a pending request so the caller
  *    shows the built-in scope picker.
  */
-export function routeCommit(store, callbacks, instance, occurrenceStart, patch, timeZone) {
+export function routeCommit(store, callbacks, instance, occurrenceStart, patch, timeZone, extra = {}) {
     if (!instance.recurring) {
-        commitDirect(store, callbacks, instance.eventId, patch);
+        commitDirect(store, callbacks, instance.eventId, patch, extra);
         return null;
     }
     const hostScope = callbacks.onRecurringEdit?.({
@@ -61,8 +63,8 @@ export function routeCommit(store, callbacks, instance, occurrenceStart, patch, 
         occurrenceStart,
     });
     if (hostScope) {
-        applyRecurringEdit(store, callbacks, instance, occurrenceStart, patch, hostScope, timeZone);
+        applyRecurringEdit(store, callbacks, instance, occurrenceStart, patch, hostScope, timeZone, extra);
         return null;
     }
-    return { instance, occurrenceStart, patch };
+    return { instance, occurrenceStart, patch, extra };
 }

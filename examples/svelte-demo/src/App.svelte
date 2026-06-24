@@ -3,6 +3,7 @@
     Calendar,
     createCalendarState,
     type CalendarEvent,
+    type CalendarResource,
     type EventInstance,
   } from "@calidar/svelte";
   import type { SlotSelection } from "@calidar/svelte";
@@ -85,18 +86,82 @@
     },
   ];
 
+  // Resources (rooms) for the Resources / Timeline views.
+  const RESOURCES: CalendarResource[] = [
+    { id: "room-a", title: "Room A", color: "#1a73e8" },
+    { id: "room-b", title: "Room B", color: "#9334e6" },
+    { id: "room-c", title: "Room C", color: "#0b8043" },
+  ];
+
+  // Per-resource events on the focal day: overlaps in Room A, a parallel booking
+  // in Room B, and an all-day hold in Room C.
+  const resourceEvents: CalendarEvent[] = [
+    { id: "res-a1", title: "Sprint planning", start: at(0, 9, 0), end: at(0, 10, 30), resourceId: "room-a", color: "#1a73e8" },
+    { id: "res-a2", title: "Vendor call", start: at(0, 10, 0), end: at(0, 11, 0), resourceId: "room-a", color: "#e8710a" },
+    { id: "res-b1", title: "Interview", start: at(0, 9, 30), end: at(0, 11, 0), resourceId: "room-b", color: "#9334e6" },
+    { id: "res-b2", title: "Workshop", start: at(0, 14, 0), end: at(0, 16, 0), resourceId: "room-b", color: "#3f51b5" },
+    { id: "res-c1", title: "Reserved (setup)", start: isoDate(0), end: isoDate(1), allDay: true, resourceId: "room-c", color: "#0b8043" },
+    { id: "res-c2", title: "All-hands", start: at(0, 13, 0), end: at(0, 14, 0), resourceId: "room-c", color: "#d93025" },
+  ];
+
+  /**
+   * Bulk event generator: scatters a large volume of events across ±6 months so
+   * the infinite, virtualised Agenda has something substantial to scroll. Seeded
+   * so the demo renders identically on every reload.
+   */
+  function makeBulkEvents(count: number): CalendarEvent[] {
+    let seed = 0x9e3779b9;
+    const rand = (): number => {
+      seed |= 0;
+      seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const palette = ["#1a73e8", "#9334e6", "#e8710a", "#0b8043", "#d93025", "#00897b", "#3f51b5", "#c2185b"];
+    const titles = ["Sync", "Review", "Workshop", "Interview", "Planning", "Retro", "Demo", "Coffee chat", "Deep work", "Roadmap", "Support shift", "Release"];
+    const out: CalendarEvent[] = [];
+    for (let i = 0; i < count; i++) {
+      const dayOffset = Math.round((rand() * 2 - 1) * 180);
+      const isAllDay = rand() < 0.12;
+      const color = palette[Math.floor(rand() * palette.length)]!;
+      const title = `${titles[Math.floor(rand() * titles.length)]} #${i + 1}`;
+      if (isAllDay) {
+        out.push({ id: `bulk-${i}`, title, start: isoDate(dayOffset), end: isoDate(dayOffset + 1), allDay: true, color });
+      } else {
+        const h = 7 + Math.floor(rand() * 11);
+        const m = rand() < 0.5 ? 0 : 30;
+        const durMin = 30 + Math.floor(rand() * 5) * 30;
+        const startD = new Date(now);
+        startD.setDate(startD.getDate() + dayOffset);
+        startD.setHours(h, m, 0, 0);
+        const endD = new Date(startD.getTime() + durMin * 60_000);
+        const p = (n: number) => String(n).padStart(2, "0");
+        const fmt = (d: Date) =>
+          `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:00`;
+        out.push({ id: `bulk-${i}`, title, start: fmt(startD), end: fmt(endD), color });
+      }
+    }
+    return out;
+  }
+
+  const bulkEvents = makeBulkEvents(420);
+
   // Pin timed events to a fixed zone so the time-zone switcher visibly
   // converts them (Tokyo shifts every meeting by +7/+8h). All-day events stay
   // "floating", exactly like real calendars treat them.
   const PINNED_ZONE = "Europe/Paris";
-  const displayEvents: CalendarEvent[] = events.map((e) =>
-    e.allDay ? e : { ...e, timeZone: PINNED_ZONE },
-  );
+  const displayEvents: CalendarEvent[] = [
+    ...events,
+    ...resourceEvents,
+    ...bulkEvents,
+  ].map((e) => (e.allDay ? e : { ...e, timeZone: PINNED_ZONE }));
 
   const cal = createCalendarState({
     view: "week",
     timeZone: "Europe/Paris",
     events: displayEvents,
+    resources: RESOURCES,
   });
 
   const zones = ["Europe/Paris", "America/New_York", "Asia/Tokyo"];

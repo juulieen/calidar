@@ -12,6 +12,9 @@ export { CalendarToolbar } from "./CalendarToolbar.js";
 export { TimeGridView } from "./TimeGridView.js";
 export { MonthView } from "./MonthView.js";
 export { AgendaView } from "./AgendaView.js";
+export { InfiniteAgendaView } from "./InfiniteAgendaView.js";
+export { ResourcesView } from "./ResourcesView.js";
+export { TimelineView } from "./TimelineView.js";
 
 // Composable
 export { useCalendar, type UseCalendarResult } from "./useCalendar.js";
@@ -26,6 +29,8 @@ export {
   type EventDraft,
   type RecurrenceEditScope,
   type RecurringEditRequest,
+  type TimelineMode,
+  type TimelineUnit,
 } from "./context.js";
 
 // Drag composables (advanced)
@@ -54,13 +59,16 @@ export {
   formatWeekdayShort,
   formatAgendaDay,
   formatDayNumber,
+  formatMonthYear,
   formatRangeTitle,
+  timelineTickLabel,
   type Formatters,
 } from "./format.js";
 
 // Re-export the most useful core types for convenience.
 export type {
   CalendarEvent,
+  CalendarResource,
   CalendarOptions,
   CalendarSnapshot,
   CalendarStore,
@@ -71,6 +79,8 @@ export type {
   TimeGridViewModel,
   MonthViewModel,
   AgendaViewModel,
+  ResourceViewModel,
+  TimelineViewModel,
   PlainDate,
 } from "@calidar/core";
 export { createCalendar } from "@calidar/core";

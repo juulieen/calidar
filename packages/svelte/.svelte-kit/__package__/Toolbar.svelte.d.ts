@@ -1,4 +1,4 @@
-import type { CalendarStore, CalendarSnapshot, PlainDate } from "@calidar/core";
+import type { CalendarStore, CalendarSnapshot, PlainDate, ResourceViewModel, TimelineUnit } from "@calidar/core";
 import { type Formatters } from "./format.js";
 interface Props {
     store: CalendarStore;
@@ -15,6 +15,20 @@ interface Props {
     titleDays?: PlainDate[] | null;
     /** Locale-bound formatters (defaults to the runtime locale when omitted). */
     formatters?: Formatters;
+    /** True while the Resources mode is active (overrides the store view). */
+    resourcesActive?: boolean;
+    /** The resources view model while the mode is active, else null. */
+    resourceView?: ResourceViewModel | null;
+    /** Toggle the Resources mode. */
+    onResourceMode?: (on: boolean) => void;
+    /** True while the Timeline mode is active. */
+    timelineActive?: boolean;
+    /** Current Timeline axis unit. */
+    timelineUnit?: TimelineUnit;
+    /** Toggle the Timeline mode on/off. */
+    onTimelineActive?: (on: boolean) => void;
+    /** Choose the Timeline axis unit (also activates the mode). */
+    onTimelineUnit?: (unit: TimelineUnit) => void;
 }
 declare const Toolbar: import("svelte").Component<Props, {}, "">;
 type Toolbar = ReturnType<typeof Toolbar>;

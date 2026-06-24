@@ -8,6 +8,8 @@ export interface SlotSelection {
     start: number;
     end: number;
     allDay: boolean;
+    /** Resource the slot belongs to, when drafted in the Resources view. */
+    resourceId?: string;
 }
 /** Scope of a recurring-series edit, mirroring the core's `RecurrenceEditScope`. */
 export type RecurringEditScope = "this" | "thisAndFollowing" | "all";

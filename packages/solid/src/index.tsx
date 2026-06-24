@@ -12,6 +12,9 @@ export { CalendarToolbar } from "./CalendarToolbar.js";
 export { TimeGridView } from "./TimeGridView.js";
 export { MonthView } from "./MonthView.js";
 export { AgendaView } from "./AgendaView.js";
+export { InfiniteAgendaView } from "./InfiniteAgendaView.js";
+export { ResourcesView } from "./ResourcesView.js";
+export { TimelineView } from "./TimelineView.js";
 
 // Binding helper
 export { useCalendar, type UseCalendarResult } from "./useCalendar.js";
@@ -26,6 +29,8 @@ export {
   type EventDraft,
   type RecurrenceEditScope,
   type RecurringEditRequest,
+  type TimelineMode,
+  type TimelineUnit,
 } from "./context.js";
 
 // Drag helpers (advanced)
@@ -49,6 +54,7 @@ export { RecurrenceScopePopover } from "./RecurrenceScopePopover.js";
 export type {
   CalendarEvent,
   CalendarOptions,
+  CalendarResource,
   CalendarSnapshot,
   CalendarStore,
   CalendarState,
@@ -58,6 +64,8 @@ export type {
   TimeGridViewModel,
   MonthViewModel,
   AgendaViewModel,
+  ResourceViewModel,
+  TimelineViewModel,
   PlainDate,
 } from "@calidar/core";
 export { createCalendar } from "@calidar/core";
