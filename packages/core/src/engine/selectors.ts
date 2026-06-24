@@ -4,6 +4,7 @@
  */
 import type {
   CalendarEvent,
+  CalendarResource,
   CalendarState,
   DayBand,
   EventInstance,
@@ -80,6 +81,26 @@ export interface AgendaViewModel {
   kind: "agenda";
   sections: AgendaSectionModel[];
   range: EpochRange;
+  timeZone: string;
+}
+
+export interface ResourceColumnModel {
+  resource: CalendarResource;
+  dayStart: number;
+  dayEnd: number;
+  /** Timed events for this resource, laid out within the day. */
+  timed: TimedLayout[];
+  /** All-day / multi-day instances for this resource. */
+  allDay: EventInstance[];
+}
+
+export interface ResourceViewModel {
+  kind: "resources";
+  date: PlainDate;
+  isToday: boolean;
+  columns: ResourceColumnModel[];
+  range: EpochRange;
+  hourHeight: number;
   timeZone: string;
 }
 
@@ -233,6 +254,50 @@ function buildAgenda(
   }
   void today;
   return { kind: "agenda", sections, range, timeZone: tz };
+}
+
+/**
+ * Build the resources view model for the focal day: one column per configured
+ * resource, each laid out independently. This is a standalone view (not part of
+ * the main `ViewModel` union) — adapters opt in and drive day navigation
+ * themselves (cursor moves one day at a time).
+ */
+export function computeResourceView(
+  state: CalendarState,
+  events: CalendarEvent[],
+  now: number = currentNow(),
+): ResourceViewModel {
+  const tz = state.timeZone;
+  const today = epochToPlainDate(now, tz);
+  const cursorDate = epochToPlainDate(state.cursor, tz);
+  const dayStart = startOfDayEpoch(cursorDate, tz);
+  const dayEnd = startOfDayEpoch(addDays(cursorDate, 1), tz);
+  const range: EpochRange = { start: dayStart, end: dayEnd };
+  const instances = instancesInWindow(events, range, tz);
+
+  const columns: ResourceColumnModel[] = state.resources.map((resource) => {
+    const own = instances.filter((i) => i.resourceId === resource.id);
+    const timed: EventInstance[] = [];
+    const allDay: EventInstance[] = [];
+    for (const inst of own) (isBand(inst, tz) ? allDay : timed).push(inst);
+    return {
+      resource,
+      dayStart,
+      dayEnd,
+      timed: layoutTimedColumns(timed, dayStart, dayEnd),
+      allDay,
+    };
+  });
+
+  return {
+    kind: "resources",
+    date: cursorDate,
+    isToday: isSameDay(cursorDate, today),
+    columns,
+    range,
+    hourHeight: state.hourHeight,
+    timeZone: tz,
+  };
 }
 
 /** Compute the view model for the current state + events. */
