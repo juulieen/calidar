@@ -47,6 +47,9 @@ export {
 // Instance expansion
 export { instancesInWindow, parseDateValue } from "./engine/instances.js";
 
+// iCalendar (.ics) interop
+export { parseICS, toICS, type ToIcsOptions } from "./ics/ics.js";
+
 // Recurring-occurrence editing
 export {
   editRecurringEvent,
