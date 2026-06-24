@@ -6,6 +6,13 @@
 /** The supported calendar view kinds. */
 export type CalendarViewKind = "day" | "days" | "week" | "month" | "agenda";
 
+/** A schedulable resource (room, person, equipment) for the resources view. */
+export interface CalendarResource {
+  id: string;
+  title: string;
+  color?: string;
+}
+
 /**
  * An event as supplied by the host application. Times are ISO 8601 strings
  * or epoch milliseconds; the engine normalises them against a time zone.
@@ -31,11 +38,18 @@ export interface CalendarEvent {
   rrule?: string;
   /** ISO date-times excluded from the recurrence expansion. */
   exdates?: (string | number)[];
+  /**
+   * RFC 5545 RDATE — extra occurrence start times added to the set, on top of
+   * the master/RRULE occurrences (ISO strings or epoch ms). EXDATE wins.
+   */
+  rdates?: (string | number)[];
   /** Arbitrary host data, carried through untouched. */
   meta?: Record<string, unknown>;
   /** Optional display hints; adapters/themes may use these. */
   color?: string;
   editable?: boolean;
+  /** Resource this event belongs to (for the resources view). */
+  resourceId?: string;
 }
 
 /**
@@ -56,6 +70,8 @@ export interface EventInstance {
   recurring: boolean;
   color?: string;
   editable: boolean;
+  /** Resource id carried from the source event, if any. */
+  resourceId?: string;
   source: CalendarEvent;
 }
 
@@ -104,6 +120,8 @@ export interface CalendarState {
   visibleDays: number;
   /** Pixels per hour for timed grids — adapters may override at render time. */
   hourHeight: number;
+  /** Resources shown (in order) by the "resources" view. */
+  resources: CalendarResource[];
 }
 
 /** Inclusive-exclusive instant interval, in epoch milliseconds. */
