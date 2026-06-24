@@ -9,6 +9,7 @@
  * something actually changed.
  */
 import type {
+  BusinessHours,
   CalendarEvent,
   CalendarResource,
   CalendarState,
@@ -44,6 +45,10 @@ export interface CalendarOptions {
   weekStartsOn?: number;
   visibleDays?: number;
   hourHeight?: number;
+  /** Snap/slot granularity in minutes (default 15). */
+  slotMinutes?: number;
+  /** Working-hours window(s). */
+  businessHours?: BusinessHours | BusinessHours[];
   events?: CalendarEvent[];
   /** Resources for the "resources" view. */
   resources?: CalendarResource[];
@@ -58,6 +63,7 @@ const DEFAULTS = {
   weekStartsOn: 1,
   visibleDays: 3,
   hourHeight: 48,
+  slotMinutes: 15,
 };
 
 export class CalendarStore {
@@ -84,6 +90,8 @@ export class CalendarStore {
       weekStartsOn: options.weekStartsOn ?? DEFAULTS.weekStartsOn,
       visibleDays: options.visibleDays ?? DEFAULTS.visibleDays,
       hourHeight: options.hourHeight ?? DEFAULTS.hourHeight,
+      slotMinutes: options.slotMinutes ?? DEFAULTS.slotMinutes,
+      ...(options.businessHours ? { businessHours: options.businessHours } : {}),
       resources: options.resources ? [...options.resources] : [],
     };
     this.events = options.events ? [...options.events] : [];
@@ -160,6 +168,14 @@ export class CalendarStore {
 
   setHourHeight(hourHeight: number): void {
     this.patchState({ hourHeight });
+  }
+
+  setSlotMinutes(slotMinutes: number): void {
+    this.patchState({ slotMinutes: Math.max(1, slotMinutes) });
+  }
+
+  setBusinessHours(businessHours: BusinessHours | BusinessHours[] | undefined): void {
+    this.patchState({ businessHours });
   }
 
   setResources(resources: CalendarResource[]): void {

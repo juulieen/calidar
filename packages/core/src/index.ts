@@ -17,11 +17,20 @@ export type {
   CalendarResource,
   CalendarState,
   CalendarViewKind,
+  BusinessHours,
   EventInstance,
   TimedLayout,
   DayBand,
   EpochRange,
 } from "./types.js";
+
+// Business hours
+export {
+  isWithinBusinessHours,
+  businessWindowsForDate,
+  businessWindowForDate,
+  normalizeBusinessHours,
+} from "./engine/businessHours.js";
 
 // Store
 export {
@@ -35,6 +44,7 @@ export {
 export {
   computeView,
   computeResourceView,
+  computeTimelineView,
   visibleRange,
   type ViewModel,
   type TimeGridViewModel,
@@ -42,6 +52,12 @@ export {
   type AgendaViewModel,
   type ResourceViewModel,
   type ResourceColumnModel,
+  type TimelineViewModel,
+  type TimelineRowModel,
+  type TimelineBar,
+  type TimelineSlot,
+  type TimelineUnit,
+  type TimelineOptions,
   type DayColumnModel,
   type MonthWeekModel,
   type MonthDayModel,
@@ -50,6 +66,9 @@ export {
 
 // Instance expansion
 export { instancesInWindow, parseDateValue } from "./engine/instances.js";
+
+// iCalendar (.ics) interop
+export { parseICS, toICS, type ToIcsOptions } from "./ics/ics.js";
 
 // Recurring-occurrence editing
 export {
