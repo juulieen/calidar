@@ -4,8 +4,12 @@
  * The view picker maps friendly labels onto `setView` (+ `setVisibleDays` for
  * the "3 days" preset).
  */
-import { epochToPlainDate, type CalendarViewKind } from "@calidar/core";
-import { useCalendarContext } from "./context.js";
+import {
+  epochToPlainDate,
+  startOfWeek,
+  type CalendarViewKind,
+} from "@calidar/core";
+import { useCalendarContext, type TimelineUnit } from "./context.js";
 import { formatRangeTitle } from "./format.js";
 
 interface ViewOption {
@@ -24,6 +28,12 @@ const VIEW_OPTIONS: ViewOption[] = [
   { label: "Agenda", shortLabel: "List", view: "agenda" },
 ];
 
+const TIMELINE_UNITS: { label: string; shortLabel: string; unit: TimelineUnit }[] = [
+  { label: "Day", shortLabel: "D", unit: "day" },
+  { label: "Week", shortLabel: "W", unit: "week" },
+  { label: "Month", shortLabel: "M", unit: "month" },
+];
+
 export function CalendarToolbar(): JSX.Element {
   const {
     store,
@@ -33,6 +43,7 @@ export function CalendarToolbar(): JSX.Element {
     resourcesActive,
     setResourceMode,
     resourceView,
+    timeline,
   } = useCalendarContext();
   const { state } = snapshot;
   const { view, cursor, timeZone, visibleDays } = state;
@@ -45,6 +56,17 @@ export function CalendarToolbar(): JSX.Element {
   if (resourceView) {
     // Resources mode navigates one day at a time; show that day's full date.
     title = formatRangeTitle("day", resourceView.date, 1);
+  } else if (timeline.active) {
+    // Timeline title mirrors its unit (day → full date, week/month → range).
+    const cursorDate = epochToPlainDate(cursor, timeZone);
+    if (timeline.unit === "day") {
+      title = formatRangeTitle("day", cursorDate, 1);
+    } else if (timeline.unit === "month") {
+      title = formatRangeTitle("month", cursorDate, 0);
+    } else {
+      const first = startOfWeek(cursorDate, state.weekStartsOn);
+      title = formatRangeTitle("week", first, 7);
+    }
   } else if (
     effectiveView.kind === "day" ||
     effectiveView.kind === "days" ||
@@ -63,6 +85,7 @@ export function CalendarToolbar(): JSX.Element {
 
   const isActive = (opt: ViewOption): boolean =>
     !resourcesActive &&
+    !timeline.active &&
     opt.view === view &&
     (opt.view !== "days" || opt.visibleDays === visibleDays);
 
@@ -103,7 +126,9 @@ export function CalendarToolbar(): JSX.Element {
             aria-pressed={isActive(opt)}
             aria-label={opt.label}
             onClick={() => {
+              // Leaving a local mode hands control back to the store view.
               setResourceMode(false);
+              timeline.setActive(false);
               if (opt.visibleDays != null) store.setVisibleDays(opt.visibleDays);
               store.setView(opt.view);
             }}
@@ -121,7 +146,10 @@ export function CalendarToolbar(): JSX.Element {
             className={`cal-btn cal-btn--view${resourcesActive ? " cal-btn--active" : ""}`}
             aria-pressed={resourcesActive}
             aria-label="Resources"
-            onClick={() => setResourceMode(true)}
+            onClick={() => {
+              timeline.setActive(false);
+              setResourceMode(true);
+            }}
           >
             <span className="cal-btn__label cal-btn__label--full">Resources</span>
             <span className="cal-btn__label cal-btn__label--short" aria-hidden="true">
@@ -129,7 +157,51 @@ export function CalendarToolbar(): JSX.Element {
             </span>
           </button>
         )}
+
+        <button
+          type="button"
+          className={`cal-btn cal-btn--view${timeline.active ? " cal-btn--active" : ""}`}
+          aria-pressed={timeline.active}
+          aria-label="Timeline"
+          onClick={() => {
+            setResourceMode(false);
+            timeline.setActive(!timeline.active);
+          }}
+        >
+          <span className="cal-btn__label cal-btn__label--full">Timeline</span>
+          <span className="cal-btn__label cal-btn__label--short" aria-hidden="true">
+            TL
+          </span>
+        </button>
       </div>
+
+      {/* Timeline axis-granularity sub-selector (only while Timeline is on). */}
+      {timeline.active && (
+        <div
+          className="cal-toolbar__units"
+          role="group"
+          aria-label="Timeline unit"
+        >
+          {TIMELINE_UNITS.map((u) => {
+            const on = timeline.unit === u.unit;
+            return (
+              <button
+                type="button"
+                key={u.unit}
+                className={`cal-btn cal-btn--view${on ? " cal-btn--active" : ""}`}
+                aria-pressed={on}
+                aria-label={`Timeline ${u.label}`}
+                onClick={() => timeline.setUnit(u.unit)}
+              >
+                <span className="cal-btn__label cal-btn__label--full">{u.label}</span>
+                <span className="cal-btn__label cal-btn__label--short" aria-hidden="true">
+                  {u.shortLabel}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

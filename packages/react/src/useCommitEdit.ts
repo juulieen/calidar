@@ -64,6 +64,12 @@ export function useCommitEdit(): CommitEditApi {
       const { instance, occurrenceStart, patch } = pending;
       setPending(null);
 
+      // Apply the resource reassignment (if any) to the store first so the
+      // time-only `editRecurringEvent` mutation lands on the updated event.
+      if (patch.resourceId != null) {
+        store.updateEvent(instance.eventId, { resourceId: patch.resourceId });
+      }
+
       const handled = onRecurringEdit?.({ instance, occurrenceStart, patch, scope });
       if (!handled) {
         const mutation = editRecurringEvent({
@@ -90,6 +96,7 @@ export function useCommitEdit(): CommitEditApi {
         }
         for (const id of mutation.remove) store.removeEvent(id);
       }
+      // Notify the host with the full patch including any resourceId change.
       onEventUpdate?.(instance.eventId, patch);
     },
     [onEventUpdate, onRecurringEdit, pending, snapshot.state.timeZone, store],

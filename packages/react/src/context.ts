@@ -23,6 +23,26 @@ export interface CompactNav {
   nDays: number;
 }
 
+/** Axis granularity of the Timeline view (mirrors `@calidar/core`). */
+export type TimelineUnit = "day" | "week" | "month";
+
+/**
+ * State of the adapter-local "Timeline" mode. Timeline is NOT a core
+ * `CalendarViewKind`: it's a local rendering mode that never mutates
+ * `store.view`, exactly like the Resource view. When `active` is false the
+ * regular store-driven views render and `unit` is simply the last choice.
+ */
+export interface TimelineMode {
+  /** Whether the Timeline view is currently rendered (local override). */
+  active: boolean;
+  /** Current axis granularity. */
+  unit: TimelineUnit;
+  /** Switch the Timeline view on/off (off returns to the store's view). */
+  setActive: (active: boolean) => void;
+  /** Choose the axis granularity (day / week / month). */
+  setUnit: (unit: TimelineUnit) => void;
+}
+
 /** A new event the user sketched out by clicking/dragging an empty slot. */
 export interface EventDraft {
   /** Absolute start instant (epoch ms, UTC). */
@@ -82,8 +102,9 @@ export interface CalendarContextValue extends CalendarCallbacks {
   compactNav: CompactNav | null;
   /**
    * Advance the cursor by one rendered period: a whole view step normally, one
-   * day while the resources mode is active, or `compactNav.nDays` days while the
-   * compact window is active.
+   * day while the resources mode is active, `compactNav.nDays` days while the
+   * compact window is active, or the timeline unit (day/week/month) while the
+   * Timeline mode is active.
    */
   stepPeriod: (dir: 1 | -1) => void;
   /** True while the local resources mode is active (overrides `snapshot.view`). */
@@ -92,6 +113,8 @@ export interface CalendarContextValue extends CalendarCallbacks {
   setResourceMode: (on: boolean) => void;
   /** The resources view model while the mode is active, else null. */
   resourceView: ResourceViewModel | null;
+  /** Adapter-local Timeline view mode (see {@link TimelineMode}). */
+  timeline: TimelineMode;
 }
 
 export const CalendarContext = createContext<CalendarContextValue | null>(null);

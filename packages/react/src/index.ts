@@ -13,6 +13,7 @@ export { TimeGridView } from "./TimeGridView.js";
 export { MonthView } from "./MonthView.js";
 export { AgendaView } from "./AgendaView.js";
 export { ResourcesView } from "./ResourcesView.js";
+export { TimelineView } from "./TimelineView.js";
 
 // Hook
 export { useCalendar, type UseCalendarResult } from "./useCalendar.js";
@@ -27,6 +28,8 @@ export {
   type EventDraft,
   type RecurrenceEditScope,
   type RecurringEditRequest,
+  type TimelineMode,
+  type TimelineUnit,
 } from "./context.js";
 
 // Drag hook (advanced)
@@ -60,6 +63,10 @@ export type {
   MonthViewModel,
   AgendaViewModel,
   ResourceViewModel,
+  TimelineViewModel,
+  TimelineRowModel,
+  TimelineBar,
+  TimelineSlot,
   CalendarResource,
   PlainDate,
 } from "@calidar/core";

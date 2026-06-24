@@ -106,6 +106,7 @@ const EVENTS: CalendarEvent[] = [
     end: "2026-01-05T09:45:00",
     rrule: "FREQ=WEEKLY;BYDAY=MO,WE",
     color: "#1a73e8",
+    resourceId: "room-a",
   },
   {
     id: "design",
@@ -113,6 +114,7 @@ const EVENTS: CalendarEvent[] = [
     start: at(0, 10, 0),
     end: at(0, 11, 30),
     color: "#9334e6",
+    resourceId: "room-c",
   },
   {
     id: "overlap-1",
@@ -120,6 +122,7 @@ const EVENTS: CalendarEvent[] = [
     start: at(0, 11, 0),
     end: at(0, 12, 0),
     color: "#e8710a",
+    resourceId: "room-b",
   },
   {
     id: "lunch",
@@ -127,6 +130,15 @@ const EVENTS: CalendarEvent[] = [
     start: at(0, 12, 30),
     end: at(0, 13, 30),
     color: "#0b8043",
+    resourceId: "room-b",
+  },
+  {
+    id: "workshop",
+    title: "Team workshop",
+    start: at(0, 14, 0),
+    end: at(0, 16, 30),
+    color: "#e8710a",
+    resourceId: "room-a",
   },
   {
     id: "focus",
@@ -134,6 +146,7 @@ const EVENTS: CalendarEvent[] = [
     start: at(1, 14, 0),
     end: at(1, 17, 0),
     color: "#3f51b5",
+    resourceId: "room-c",
   },
   {
     id: "allday",
@@ -149,6 +162,7 @@ const EVENTS: CalendarEvent[] = [
     start: at(3, 9, 0),
     end: at(5, 18, 0),
     color: "#00897b",
+    resourceId: "room-a",
   },
   {
     id: "client",
@@ -156,6 +170,7 @@ const EVENTS: CalendarEvent[] = [
     start: at(1, 15, 30),
     end: at(1, 16, 0),
     color: "#1a73e8",
+    resourceId: "room-b",
   },
   {
     id: "locked",
@@ -210,6 +225,8 @@ export function App(): JSX.Element {
         <span className="demo__hint">
           Drag any event to move it. Drag the all-day banners (or month cells)
           across days; drag the recurring “Daily standup” to pick an edit scope.
+          Try the “Timeline” view (Day / Week / Month) for a horizontal axis with
+          rooms as rows — drag bars sideways to reschedule or onto another room.
         </span>
         <span className="demo__status">{lastAction}</span>
       </header>
