@@ -12,6 +12,16 @@ interface Props extends CalendarCallbacks {
      * `true`; set `false` to keep the legacy fixed layout.
      */
     responsive?: boolean;
+    /**
+     * BCP-47 locale for all labels (weekdays, titles, times). Overrides
+     * `navigator.language`. Omit to keep the host's runtime locale (default).
+     */
+    locale?: string;
+    /**
+     * Force a 12-hour (`true`) or 24-hour (`false`) clock for time labels. Omit
+     * to let `Intl` pick the locale's default hour cycle (default).
+     */
+    hour12?: boolean;
 }
 declare const Calendar: import("svelte").Component<Props, {}, "">;
 type Calendar = ReturnType<typeof Calendar>;

@@ -14,13 +14,23 @@
 // Types
 export type {
   CalendarEvent,
+  CalendarResource,
   CalendarState,
   CalendarViewKind,
+  BusinessHours,
   EventInstance,
   TimedLayout,
   DayBand,
   EpochRange,
 } from "./types.js";
+
+// Business hours
+export {
+  isWithinBusinessHours,
+  businessWindowsForDate,
+  businessWindowForDate,
+  normalizeBusinessHours,
+} from "./engine/businessHours.js";
 
 // Store
 export {
@@ -33,11 +43,21 @@ export {
 // Selectors & view models
 export {
   computeView,
+  computeResourceView,
+  computeTimelineView,
   visibleRange,
   type ViewModel,
   type TimeGridViewModel,
   type MonthViewModel,
   type AgendaViewModel,
+  type ResourceViewModel,
+  type ResourceColumnModel,
+  type TimelineViewModel,
+  type TimelineRowModel,
+  type TimelineBar,
+  type TimelineSlot,
+  type TimelineUnit,
+  type TimelineOptions,
   type DayColumnModel,
   type MonthWeekModel,
   type MonthDayModel,
@@ -46,6 +66,9 @@ export {
 
 // Instance expansion
 export { instancesInWindow, parseDateValue } from "./engine/instances.js";
+
+// iCalendar (.ics) interop
+export { parseICS, toICS, type ToIcsOptions } from "./ics/ics.js";
 
 // Recurring-occurrence editing
 export {
@@ -100,3 +123,12 @@ export {
   type DragMode,
   type DragPreview,
 } from "./interactions/drag.js";
+export {
+  constrainInterval,
+  intervalsOverlap,
+  hasConflict,
+  firstFreeSlot,
+  type Interval,
+  type IntervalConstraints,
+  type BusyInterval,
+} from "./interactions/constraints.js";

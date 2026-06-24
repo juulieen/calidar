@@ -1,14 +1,17 @@
 <script lang="ts">
   import type { AgendaViewModel } from "@calidar/core";
   import type { CalendarCallbacks } from "./types.js";
-  import { formatAgendaDay, formatTime } from "./format.js";
+  import { createFormatters, type Formatters } from "./format.js";
 
   interface Props {
     view: AgendaViewModel;
     now: number;
     callbacks: CalendarCallbacks;
+    /** Locale-bound formatters (defaults to the runtime locale when omitted). */
+    formatters?: Formatters;
   }
-  const { view, now, callbacks }: Props = $props();
+  const { view, now, callbacks, formatters = createFormatters() }: Props = $props();
+  const { formatAgendaDay, formatTime } = $derived(formatters);
 
   function timeLabel(start: number, end: number, allDay: boolean): string {
     if (allDay) return "All day";

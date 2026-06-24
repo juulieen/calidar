@@ -102,10 +102,27 @@
   const zones = ["Europe/Paris", "America/New_York", "Asia/Tokyo"];
   let timeZone = $state("Europe/Paris");
 
+  const locales = [
+    { value: "en-US", label: "English (US)" },
+    { value: "fr-FR", label: "Français" },
+    { value: "ja-JP", label: "日本語" },
+  ];
+  let locale = $state("en-US");
+  let hour12 = $state<boolean | undefined>(undefined);
+
   function onZoneChange(e: Event): void {
     const tz = (e.target as HTMLSelectElement).value;
     timeZone = tz;
     cal.store.setTimeZone(tz);
+  }
+
+  function onLocaleChange(e: Event): void {
+    locale = (e.target as HTMLSelectElement).value;
+  }
+
+  function onHour12Change(e: Event): void {
+    const v = (e.target as HTMLSelectElement).value;
+    hour12 = v === "auto" ? undefined : v === "12";
   }
 
   // Wire callbacks back to the store for a live, editable demo.
@@ -143,11 +160,35 @@
         {/each}
       </select>
     </label>
+    <label class="demo__zone">
+      Locale
+      <select id="locale-select" name="locale" aria-label="Display locale" value={locale} onchange={onLocaleChange}>
+        {#each locales as l (l.value)}
+          <option value={l.value}>{l.label}</option>
+        {/each}
+      </select>
+    </label>
+    <label class="demo__zone">
+      Clock
+      <select
+        id="hour12-select"
+        name="hour12"
+        aria-label="Hour cycle"
+        value={hour12 === undefined ? "auto" : hour12 ? "12" : "24"}
+        onchange={onHour12Change}
+      >
+        <option value="auto">Auto</option>
+        <option value="12">12-hour</option>
+        <option value="24">24-hour</option>
+      </select>
+    </label>
   </header>
 
   <div class="demo__cal">
     <Calendar
       store={cal.store}
+      {locale}
+      {hour12}
       {onEventCreate}
       {onSelectSlot}
       {onEventClick}

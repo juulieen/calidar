@@ -17,14 +17,17 @@
     type EditBounds,
   } from "./recurringEdit.js";
   import RecurringScopeDialog from "./RecurringScopeDialog.svelte";
-  import { formatWeekdayShort } from "./format.js";
+  import { createFormatters, type Formatters } from "./format.js";
 
   interface Props {
     store: CalendarStore;
     view: MonthViewModel;
     callbacks: CalendarCallbacks;
+    /** Locale-bound formatters (defaults to the runtime locale when omitted). */
+    formatters?: Formatters;
   }
-  const { store, view, callbacks }: Props = $props();
+  const { store, view, callbacks, formatters = createFormatters() }: Props = $props();
+  const { formatWeekdayShort } = $derived(formatters);
 
   const MAX_LANES = 3; // visible band lanes before collapsing to "+N"
   const LANE_H = 20;

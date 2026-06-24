@@ -1,0 +1,59 @@
+{
+  "name": "@calidar/vue",
+  "version": "0.0.1",
+  "description": "Vue 3 adapter for @calidar/core — headless calendar with Google/Outlook-style UX.",
+  "license": "MIT",
+  "author": "Julien Ollivier",
+  "homepage": "https://github.com/juulieen/calidar/tree/main/packages/vue#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/juulieen/calidar.git",
+    "directory": "packages/vue"
+  },
+  "bugs": "https://github.com/juulieen/calidar/issues",
+  "keywords": [
+    "calendar",
+    "vue",
+    "vue3",
+    "scheduler",
+    "rrule",
+    "recurrence",
+    "timezone",
+    "agenda",
+    "events",
+    "typescript"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "sideEffects": ["**/*.css"],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": "./dist/styles.css"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup && cp src/styles.css dist/styles.css",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "tsup && cp src/styles.css dist/styles.css"
+  },
+  "peerDependencies": {
+    "vue": "^3.4"
+  },
+  "dependencies": {
+    "@calidar/core": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vue": "^3.5.13"
+  }
+}

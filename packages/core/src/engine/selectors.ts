@@ -4,6 +4,7 @@
  */
 import type {
   CalendarEvent,
+  CalendarResource,
   CalendarState,
   DayBand,
   EventInstance,
@@ -14,11 +15,13 @@ import {
   type PlainDate,
   addDays,
   addMonths,
+  daysInMonth,
   epochToPlainDate,
   isSameDay,
   isoWeekday,
   startOfDayEpoch,
   startOfWeek,
+  wallToEpoch,
 } from "../datetime/zoned.js";
 import { instancesInWindow } from "./instances.js";
 import { layoutTimedColumns } from "../layout/overlap.js";
@@ -80,6 +83,26 @@ export interface AgendaViewModel {
   kind: "agenda";
   sections: AgendaSectionModel[];
   range: EpochRange;
+  timeZone: string;
+}
+
+export interface ResourceColumnModel {
+  resource: CalendarResource;
+  dayStart: number;
+  dayEnd: number;
+  /** Timed events for this resource, laid out within the day. */
+  timed: TimedLayout[];
+  /** All-day / multi-day instances for this resource. */
+  allDay: EventInstance[];
+}
+
+export interface ResourceViewModel {
+  kind: "resources";
+  date: PlainDate;
+  isToday: boolean;
+  columns: ResourceColumnModel[];
+  range: EpochRange;
+  hourHeight: number;
   timeZone: string;
 }
 
@@ -233,6 +256,217 @@ function buildAgenda(
   }
   void today;
   return { kind: "agenda", sections, range, timeZone: tz };
+}
+
+/**
+ * Build the resources view model for the focal day: one column per configured
+ * resource, each laid out independently. This is a standalone view (not part of
+ * the main `ViewModel` union) — adapters opt in and drive day navigation
+ * themselves (cursor moves one day at a time).
+ */
+export function computeResourceView(
+  state: CalendarState,
+  events: CalendarEvent[],
+  now: number = currentNow(),
+): ResourceViewModel {
+  const tz = state.timeZone;
+  const today = epochToPlainDate(now, tz);
+  const cursorDate = epochToPlainDate(state.cursor, tz);
+  const dayStart = startOfDayEpoch(cursorDate, tz);
+  const dayEnd = startOfDayEpoch(addDays(cursorDate, 1), tz);
+  const range: EpochRange = { start: dayStart, end: dayEnd };
+  const instances = instancesInWindow(events, range, tz);
+
+  const columns: ResourceColumnModel[] = state.resources.map((resource) => {
+    const own = instances.filter((i) => i.resourceId === resource.id);
+    const timed: EventInstance[] = [];
+    const allDay: EventInstance[] = [];
+    for (const inst of own) (isBand(inst, tz) ? allDay : timed).push(inst);
+    return {
+      resource,
+      dayStart,
+      dayEnd,
+      timed: layoutTimedColumns(timed, dayStart, dayEnd),
+      allDay,
+    };
+  });
+
+  return {
+    kind: "resources",
+    date: cursorDate,
+    isToday: isSameDay(cursorDate, today),
+    columns,
+    range,
+    hourHeight: state.hourHeight,
+    timeZone: tz,
+  };
+}
+
+// ---- Timeline view (resources as rows, horizontal time axis) -------------
+
+export type TimelineUnit = "day" | "week" | "month";
+
+export interface TimelineSlot {
+  /** Slot start instant (epoch ms). */
+  start: number;
+  /** Fractional position across the range, 0..1. */
+  left: number;
+  /** True for the slot covering "now" (day unit) or today (week/month). */
+  isNow?: boolean;
+}
+
+export interface TimelineBar {
+  instance: EventInstance;
+  /** Fractional left position across the range, 0..1. */
+  left: number;
+  /** Fractional width across the range, 0..1. */
+  width: number;
+  /** Vertical lane within the row (overlapping bars stack). */
+  lane: number;
+  continuesBefore: boolean;
+  continuesAfter: boolean;
+}
+
+export interface TimelineRowModel {
+  /** The resource for this row, or null for the catch-all row (no resources). */
+  resource: CalendarResource | null;
+  bars: TimelineBar[];
+  /** Number of vertical lanes this row needs. */
+  lanes: number;
+}
+
+export interface TimelineViewModel {
+  kind: "timeline";
+  unit: TimelineUnit;
+  date: PlainDate;
+  range: EpochRange;
+  slots: TimelineSlot[];
+  rows: TimelineRowModel[];
+  timeZone: string;
+}
+
+export interface TimelineOptions {
+  /** Axis granularity: a single day (hour slots), a week or a month (day slots). */
+  unit?: TimelineUnit;
+}
+
+/** Greedy lane packing of time intervals (overlapping items get higher lanes). */
+function packTimeLanes(items: EventInstance[]): Map<string, number> {
+  const sorted = [...items].sort((a, b) => a.start - b.start || a.end - b.end);
+  const laneEnds: number[] = [];
+  const lanes = new Map<string, number>();
+  for (const item of sorted) {
+    let lane = laneEnds.findIndex((end) => end <= item.start);
+    if (lane === -1) {
+      lane = laneEnds.length;
+      laneEnds.push(item.end);
+    } else {
+      laneEnds[lane] = item.end;
+    }
+    lanes.set(item.key, lane);
+  }
+  return lanes;
+}
+
+/**
+ * Build the timeline view: one row per configured resource (or a single
+ * catch-all row when none), with events as horizontal bars positioned along a
+ * day/week/month time axis and lane-packed within their row. Standalone (not in
+ * the main `ViewModel` union); adapters opt in and drive navigation.
+ */
+export function computeTimelineView(
+  state: CalendarState,
+  events: CalendarEvent[],
+  options: TimelineOptions = {},
+  now: number = currentNow(),
+): TimelineViewModel {
+  const tz = state.timeZone;
+  const unit = options.unit ?? "day";
+  const cursorDate = epochToPlainDate(state.cursor, tz);
+
+  // Range + axis slots.
+  let rangeStart: number;
+  let rangeEnd: number;
+  const slots: TimelineSlot[] = [];
+  const today = epochToPlainDate(now, tz);
+
+  if (unit === "day") {
+    rangeStart = startOfDayEpoch(cursorDate, tz);
+    rangeEnd = startOfDayEpoch(addDays(cursorDate, 1), tz);
+    const showsToday = isSameDay(cursorDate, today);
+    for (let h = 0; h < 24; h++) {
+      const start = wallToEpoch({ ...cursorDate, hour: h, minute: 0, second: 0, millisecond: 0 }, tz);
+      const nextStart = wallToEpoch({ ...cursorDate, hour: h + 1, minute: 0, second: 0, millisecond: 0 }, tz);
+      slots.push({
+        start,
+        left: frac(start, rangeStart, rangeEnd),
+        isNow: showsToday && now >= start && now < nextStart,
+      });
+    }
+  } else {
+    const first = unit === "week" ? startOfWeek(cursorDate, state.weekStartsOn) : { ...cursorDate, day: 1 };
+    const count = unit === "week" ? 7 : daysInMonth(cursorDate.year, cursorDate.month);
+    rangeStart = startOfDayEpoch(first, tz);
+    rangeEnd = startOfDayEpoch(addDays(first, count), tz);
+    for (let i = 0; i < count; i++) {
+      const date = addDays(first, i);
+      const start = startOfDayEpoch(date, tz);
+      slots.push({ start, left: frac(start, rangeStart, rangeEnd), isNow: isSameDay(date, today) });
+    }
+  }
+
+  const span = rangeEnd - rangeStart;
+  const instances = instancesInWindow(events, { start: rangeStart, end: rangeEnd }, tz);
+
+  const makeRow = (
+    resource: CalendarResource | null,
+    rowInstances: EventInstance[],
+  ): TimelineRowModel => {
+    const lanes = packTimeLanes(rowInstances);
+    const bars: TimelineBar[] = rowInstances.map((inst) => {
+      const s = Math.max(inst.start, rangeStart);
+      const e = Math.min(inst.end, rangeEnd);
+      return {
+        instance: inst,
+        left: (s - rangeStart) / span,
+        width: Math.max((e - s) / span, 0),
+        lane: lanes.get(inst.key) ?? 0,
+        continuesBefore: inst.start < rangeStart,
+        continuesAfter: inst.end > rangeEnd,
+      };
+    });
+    return { resource, bars, lanes: laneCountFromMap(lanes) };
+  };
+
+  const rows: TimelineRowModel[] =
+    state.resources.length > 0
+      ? state.resources.map((r) =>
+          makeRow(
+            r,
+            instances.filter((i) => i.resourceId === r.id),
+          ),
+        )
+      : [makeRow(null, instances)];
+
+  return {
+    kind: "timeline",
+    unit,
+    date: cursorDate,
+    range: { start: rangeStart, end: rangeEnd },
+    slots,
+    rows,
+    timeZone: tz,
+  };
+}
+
+function frac(epoch: number, start: number, end: number): number {
+  return (epoch - start) / (end - start);
+}
+
+function laneCountFromMap(lanes: Map<string, number>): number {
+  let max = -1;
+  for (const v of lanes.values()) if (v > max) max = v;
+  return max + 1;
 }
 
 /** Compute the view model for the current state + events. */

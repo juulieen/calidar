@@ -12,6 +12,9 @@ export { CalendarToolbar } from "./CalendarToolbar.js";
 export { TimeGridView } from "./TimeGridView.js";
 export { MonthView } from "./MonthView.js";
 export { AgendaView } from "./AgendaView.js";
+export { InfiniteAgendaView } from "./InfiniteAgendaView.js";
+export { ResourcesView } from "./ResourcesView.js";
+export { TimelineView } from "./TimelineView.js";
 
 // Hook
 export { useCalendar, type UseCalendarResult } from "./useCalendar.js";
@@ -26,6 +29,8 @@ export {
   type EventDraft,
   type RecurrenceEditScope,
   type RecurringEditRequest,
+  type TimelineMode,
+  type TimelineUnit,
 } from "./context.js";
 
 // Drag hook (advanced)
@@ -45,6 +50,18 @@ export {
 } from "./useDayDrag.js";
 export { RecurrenceScopePopover } from "./RecurrenceScopePopover.js";
 
+// Formatting helpers (locale / hour12 aware).
+export {
+  createFormatters,
+  formatTime,
+  formatHour,
+  formatWeekdayShort,
+  formatAgendaDay,
+  formatDayNumber,
+  formatRangeTitle,
+  type Formatters,
+} from "./format.js";
+
 // Re-export the most useful core types for convenience.
 export type {
   CalendarEvent,
@@ -58,6 +75,12 @@ export type {
   TimeGridViewModel,
   MonthViewModel,
   AgendaViewModel,
+  ResourceViewModel,
+  TimelineViewModel,
+  TimelineRowModel,
+  TimelineBar,
+  TimelineSlot,
+  CalendarResource,
   PlainDate,
 } from "@calidar/core";
 export { createCalendar } from "@calidar/core";
