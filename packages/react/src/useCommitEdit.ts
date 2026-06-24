@@ -19,7 +19,7 @@ export interface PendingRecurringEdit {
   instance: EventInstance;
   /** Original occurrence start, before the gesture. */
   occurrenceStart: number;
-  patch: { start: number; end: number };
+  patch: { start: number; end: number; resourceId?: string };
 }
 
 export interface CommitEditApi {
@@ -29,7 +29,10 @@ export interface CommitEditApi {
    * Commit a finished gesture. For a recurring instance this opens the scope
    * popover instead of mutating immediately.
    */
-  commit: (instance: EventInstance, patch: { start: number; end: number }) => void;
+  commit: (
+    instance: EventInstance,
+    patch: { start: number; end: number; resourceId?: string },
+  ) => void;
   /** Apply a chosen scope to the pending recurring edit. */
   resolve: (scope: RecurrenceEditScope) => void;
   /** Discard the pending edit (cancel / revert). */
@@ -41,7 +44,10 @@ export function useCommitEdit(): CommitEditApi {
   const [pending, setPending] = useState<PendingRecurringEdit | null>(null);
 
   const commit = useCallback(
-    (instance: EventInstance, patch: { start: number; end: number }) => {
+    (
+      instance: EventInstance,
+      patch: { start: number; end: number; resourceId?: string },
+    ) => {
       if (instance.recurring) {
         setPending({ instance, occurrenceStart: instance.start, patch });
         return;
@@ -69,8 +75,18 @@ export function useCommitEdit(): CommitEditApi {
         });
         const ids = new Set(store.getEvents().map((e) => e.id));
         for (const ev of mutation.update) {
-          if (ids.has(ev.id)) store.updateEvent(ev.id, ev);
-          else store.addEvent(ev);
+          if (ids.has(ev.id)) {
+            // Merge resourceId into the store mutation when the event was also
+            // reassigned to a different resource column.
+            const update = patch.resourceId
+              ? { ...ev, resourceId: patch.resourceId }
+              : ev;
+            store.updateEvent(ev.id, update);
+          } else {
+            store.addEvent(
+              patch.resourceId ? { ...ev, resourceId: patch.resourceId } : ev,
+            );
+          }
         }
         for (const id of mutation.remove) store.removeEvent(id);
       }

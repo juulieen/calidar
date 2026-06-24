@@ -58,7 +58,7 @@ export interface CalendarCallbacks {
   /** Fired on a plain click of an existing event. */
   onEventClick?: (instance: EventInstance) => void;
   /** Fired when the user selects a slot without dragging far enough to create. */
-  onSelectSlot?: (range: { start: number; end: number }) => void;
+  onSelectSlot?: (range: { start: number; end: number; resourceId?: string }) => void;
   /**
    * Intercept the application of a recurring-instance edit. Return `true` to
    * signal you've handled the mutation yourself (the adapter then skips its

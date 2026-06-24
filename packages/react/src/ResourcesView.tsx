@@ -12,8 +12,8 @@
  *  - Timed move/resize/create inside a column changes the hour, exactly like the
  *    time grid (shared `useGridDrag` + `useCommitEdit`).
  *  - Dragging a timed event onto a *different* resource column reassigns its
- *    `resourceId` (via `store.updateEvent` + `onEventUpdate`), in addition to
- *    any time change. Recurring instances still route through the scope popover.
+ *    `resourceId` in addition to any time change. The change is folded into the
+ *    `useCommitEdit` patch so recurring instances defer it until scope is confirmed.
  */
 import {
   useCallback,
@@ -44,7 +44,7 @@ interface Props {
 }
 
 export function ResourcesView({ model }: Props): JSX.Element {
-  const { store, snapshot, onEventCreate, onEventUpdate, onEventClick, onSelectSlot } =
+  const { snapshot, onEventCreate, onEventClick, onSelectSlot } =
     useCalendarContext();
   const { hourHeight, timeZone, columns } = model;
   const gridHeight = 24 * hourHeight;
@@ -115,30 +115,37 @@ export function ResourcesView({ model }: Props): JSX.Element {
         });
         return;
       }
-      // Reassign the resource when the gesture lands on a different column. For
-      // a non-recurring instance we can fold the `resourceId` into the same
-      // store mutation; recurring instances route through the scope popover for
-      // the time change, and we apply the resource hop immediately alongside.
+      // Reassign the resource when the gesture lands on a different column.
+      // The resourceId is folded into the patch so that recurring instances
+      // defer the change until the scope popover is confirmed (cancel reverts
+      // it cleanly). Non-recurring instances commit immediately via
+      // useCommitEdit's store.updateEvent path.
       const targetResource = columns[d.dayIndex]?.resource;
       const movedResource =
-        targetResource != null && targetResource.id !== instance.resourceId;
-      if (movedResource && instance.editable !== false) {
-        store.updateEvent(instance.eventId, { resourceId: targetResource.id });
-        onEventUpdate?.(instance.eventId, { resourceId: targetResource.id });
-      }
-      edit.commit(instance, { start: preview.start, end: preview.end });
+        targetResource != null &&
+        targetResource.id !== instance.resourceId &&
+        instance.editable !== false;
+      edit.commit(instance, {
+        start: preview.start,
+        end: preview.end,
+        ...(movedResource ? { resourceId: targetResource!.id } : {}),
+      });
     },
-    [columns, edit, onEventCreate, onEventUpdate, store],
+    [columns, edit, onEventCreate],
   );
 
   const onClick = useCallback(
     (eventId: string | null, dayIndex: number, instant: number) => {
       if (eventId === null) {
-        onSelectSlot?.({ start: instant, end: instant + 30 * 60_000 });
+        const resource = columns[dayIndex]?.resource;
+        onSelectSlot?.({
+          start: instant,
+          end: instant + 30 * 60_000,
+          ...(resource ? { resourceId: resource.id } : {}),
+        });
       }
-      void dayIndex;
     },
-    [onSelectSlot],
+    [columns, onSelectSlot],
   );
 
   const drag = useGridDrag({ metrics, gridTop, columnAt, onCommit, onClick });
@@ -237,7 +244,6 @@ export function ResourcesView({ model }: Props): JSX.Element {
               <div
                 key={col.resource.id}
                 className={`cal-col${model.isToday ? " cal-col--today" : ""}`}
-                role="gridcell"
                 aria-label={col.resource.title}
                 onPointerDown={(e) => {
                   if (e.button !== 0 && e.pointerType === "mouse") return;
