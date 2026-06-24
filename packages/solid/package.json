@@ -1,0 +1,61 @@
+{
+  "name": "@calidar/solid",
+  "version": "0.0.1",
+  "description": "SolidJS adapter for @calidar/core — headless calendar with Google/Outlook-style UX.",
+  "license": "MIT",
+  "author": "Julien Ollivier",
+  "homepage": "https://github.com/juulieen/calidar/tree/main/packages/solid#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/juulieen/calidar.git",
+    "directory": "packages/solid"
+  },
+  "bugs": "https://github.com/juulieen/calidar/issues",
+  "keywords": [
+    "calendar",
+    "solid",
+    "solidjs",
+    "scheduler",
+    "rrule",
+    "recurrence",
+    "timezone",
+    "agenda",
+    "events",
+    "typescript"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "sideEffects": ["**/*.css"],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "solid": "./dist/index.js",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": "./dist/styles.css"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json && cp src/styles.css dist/styles.css",
+    "dev": "vite build --watch",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "vite build && tsc -p tsconfig.build.json && cp src/styles.css dist/styles.css"
+  },
+  "peerDependencies": {
+    "solid-js": "^1.8"
+  },
+  "dependencies": {
+    "@calidar/core": "workspace:*"
+  },
+  "devDependencies": {
+    "solid-js": "^1.9.3",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7",
+    "vite-plugin-solid": "^2.11.0"
+  }
+}
