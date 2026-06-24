@@ -158,7 +158,8 @@ pnpm --filter svelte-demo dev       # http://localhost:5174
 - [x] SolidJS adapter (`@calidar/solid`)
 - [x] Resource / multi-calendar columns — `computeResourceView` + React adapter (Svelte/Vue/Solid to follow)
 - [x] Virtualised infinite agenda (React) — windowed DOM + infinite scroll
-- [ ] `BYSETPOS`, `BYWEEKNO`, `BYYEARDAY`
+- [x] RRULE `BYSETPOS` (e.g. last weekday of the month)
+- [ ] RRULE `BYWEEKNO`, `BYYEARDAY`
 - [ ] i18n / localized labels & first-day-of-week presets
 
 ## License
