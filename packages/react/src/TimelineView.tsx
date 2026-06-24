@@ -108,11 +108,15 @@ export function TimelineView({ model, now }: Props): JSX.Element {
   );
 
   // Map a clientY onto a row index (for cross-row resource reassignment).
+  // Exclude DragPreview (which has no role="row") so its rect doesn't trick
+  // the hit-test into returning a row index beyond the real row list.
   const rowAt = useCallback(
     (clientY: number): number => {
       const el = rowsRef.current;
       if (!el) return 0;
-      const children = Array.from(el.children) as HTMLElement[];
+      const children = Array.from(el.children).filter(
+        (c) => (c as HTMLElement).getAttribute("role") === "row",
+      ) as HTMLElement[];
       for (let i = 0; i < children.length; i++) {
         const r = children[i]!.getBoundingClientRect();
         if (clientY >= r.top && clientY < r.bottom) return i;
@@ -165,9 +169,10 @@ export function TimelineView({ model, now }: Props): JSX.Element {
         let toRow = prev.toRow;
 
         if (kind === "move") {
-          const delta = snap(pointer - grabInstant);
-          nextStart = origStart + delta;
-          nextEnd = origEnd + delta;
+          // Snap the absolute result, not the delta, so the snapped position is
+          // grid-aligned regardless of where inside a snap bucket the grab started.
+          nextStart = snap(origStart + (pointer - grabInstant));
+          nextEnd = nextStart + (origEnd - origStart);
           // Vertical travel reassigns the bar to another resource row.
           toRow = rowAt(ev.clientY);
         } else if (kind === "resize-start") {
@@ -188,9 +193,14 @@ export function TimelineView({ model, now }: Props): JSX.Element {
         setActive(activeRef.current);
       };
 
-      const onUp = (): void => {
+      const cleanup = (): void => {
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
+        window.removeEventListener("pointercancel", onCancel);
+      };
+
+      const onUp = (): void => {
+        cleanup();
         const final = activeRef.current;
         setActive(null);
         activeRef.current = null;
@@ -207,29 +217,41 @@ export function TimelineView({ model, now }: Props): JSX.Element {
         }
 
         if (instance.recurring) {
-          // Defer to the scope popover for the time change; apply the resource
-          // change (if any) directly since the popover only carries start/end.
-          if (patch.resourceId != null) {
-            store.updateEvent(instance.eventId, { resourceId: patch.resourceId });
-          }
-          edit.commit(instance, { start: final.start, end: final.end });
+          // Defer to the scope popover for the time change; also pass the
+          // resourceId through the edit flow so the host is always notified.
+          edit.commit(instance, {
+            start: final.start,
+            end: final.end,
+            ...(patch.resourceId != null ? { resourceId: patch.resourceId } : {}),
+          });
           return;
         }
         store.updateEvent(instance.eventId, patch);
         onEventUpdate?.(instance.eventId, patch);
       };
 
+      // pointercancel fires on touch-scroll interception or OS gestures.
+      // Cancel the drag without committing any changes.
+      const onCancel = (): void => {
+        cleanup();
+        setActive(null);
+        activeRef.current = null;
+      };
+
       window.addEventListener("pointermove", onMove);
       window.addEventListener("pointerup", onUp);
+      window.addEventListener("pointercancel", onCancel);
     },
     [edit, instantAt, onEventUpdate, rowAt, rows, store],
   );
 
   // Auto-scroll the day axis toward ~7am on first mount so business hours show.
+  // axisRef = .cal-timeline__lanes → .parentElement = .cal-timeline__track (no
+  // overflow) → .parentElement = .cal-timeline__scroll (the actual scrollable).
   const didScroll = useRef(false);
   useLayoutEffect(() => {
     if (didScroll.current || unit !== "day") return;
-    const el = axisRef.current?.parentElement;
+    const el = axisRef.current?.parentElement?.parentElement;
     if (!el) return;
     didScroll.current = true;
     el.scrollLeft = Math.max(0, el.scrollWidth * (7 / 24) - 24);
