@@ -10,7 +10,6 @@ import {
   type CalendarViewKind,
 } from "@calidar/core";
 import { useCalendarContext, type TimelineUnit } from "./context.js";
-import { formatRangeTitle } from "./format.js";
 
 interface ViewOption {
   label: string;
@@ -40,11 +39,13 @@ export function CalendarToolbar(): JSX.Element {
     snapshot,
     effectiveView,
     stepPeriod,
+    formatters,
     resourcesActive,
     setResourceMode,
     resourceView,
     timeline,
   } = useCalendarContext();
+  const { formatRangeTitle } = formatters;
   const { state } = snapshot;
   const { view, cursor, timeZone, visibleDays } = state;
   const hasResources = state.resources.length > 0;

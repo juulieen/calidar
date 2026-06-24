@@ -15,5 +15,5 @@ export { DayDragController, } from "./dayDrag.svelte.js";
 // Recurring-edit helpers (apply core mutations to a store).
 export { commitDirect, applyRecurringEdit, routeCommit, } from "./recurringEdit.js";
 export { default as RecurringScopeDialog } from "./RecurringScopeDialog.svelte";
-// Formatting helpers.
-export { formatTime, formatHour, formatWeekdayShort, formatAgendaDay, formatDayNumber, formatRangeTitle, } from "./format.js";
+// Formatting helpers (locale / hour12 aware).
+export { createFormatters, formatTime, formatHour, formatWeekdayShort, formatAgendaDay, formatDayNumber, formatRangeTitle, } from "./format.js";

@@ -4,14 +4,14 @@
  */
 import type { AgendaViewModel, EventInstance } from "@calidar/core";
 import { useCalendarContext } from "./context.js";
-import { formatAgendaDay, formatTime } from "./format.js";
 
 interface Props {
   model: AgendaViewModel;
 }
 
 export function AgendaView({ model }: Props): JSX.Element {
-  const { onEventClick } = useCalendarContext();
+  const { onEventClick, formatters } = useCalendarContext();
+  const { formatAgendaDay, formatTime } = formatters;
   const { timeZone } = model;
 
   if (model.sections.length === 0) {
@@ -25,7 +25,13 @@ export function AgendaView({ model }: Props): JSX.Element {
           <h3 className="cal-agenda__date">{formatAgendaDay(section.date)}</h3>
           <ul className="cal-agenda__list">
             {section.instances.map((inst) => (
-              <AgendaRow key={inst.key} instance={inst} timeZone={timeZone} onClick={onEventClick} />
+              <AgendaRow
+                key={inst.key}
+                instance={inst}
+                timeZone={timeZone}
+                onClick={onEventClick}
+                formatTime={formatTime}
+              />
             ))}
           </ul>
         </section>
@@ -38,10 +44,12 @@ function AgendaRow({
   instance,
   timeZone,
   onClick,
+  formatTime,
 }: {
   instance: EventInstance;
   timeZone: string;
   onClick?: (instance: EventInstance) => void;
+  formatTime: (epoch: number, timeZone: string) => string;
 }): JSX.Element {
   return (
     <li>

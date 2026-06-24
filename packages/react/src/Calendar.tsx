@@ -33,6 +33,7 @@ import { MonthView } from "./MonthView.js";
 import { InfiniteAgendaView } from "./InfiniteAgendaView.js";
 import { ResourcesView } from "./ResourcesView.js";
 import { TimelineView } from "./TimelineView.js";
+import { createFormatters } from "./format.js";
 
 export interface CalendarProps extends CalendarCallbacks {
   /** Calendar configuration (used to create a store if `store` is absent). */
@@ -41,6 +42,16 @@ export interface CalendarProps extends CalendarCallbacks {
   store?: CalendarStore;
   /** Hide the built-in toolbar (host renders its own controls). */
   hideToolbar?: boolean;
+  /**
+   * BCP-47 locale for all labels (weekdays, titles, times). Overrides
+   * `navigator.language`. Omit to keep the host's runtime locale (default).
+   */
+  locale?: string;
+  /**
+   * Force a 12-hour (`true`) or 24-hour (`false`) clock for time labels. Omit
+   * to let `Intl` pick the locale's default hour cycle (default).
+   */
+  hour12?: boolean;
   /**
    * Adapt the time views to narrow (phone) widths: below 640px a Week/N-days
    * view collapses to a compact 1- or 3-day window (Google-Agenda style),
@@ -63,6 +74,8 @@ export function Calendar(props: CalendarProps): JSX.Element {
     hideToolbar,
     responsive = true,
     className,
+    locale,
+    hour12,
     onEventCreate,
     onEventUpdate,
     onEventClick,
@@ -71,6 +84,13 @@ export function Calendar(props: CalendarProps): JSX.Element {
   } = props;
 
   const { store, snapshot } = useCalendar(externalStore ?? options ?? {});
+
+  // Presentation-only formatters bound to the locale/hour12 props (memoised so
+  // views get a stable reference until the settings change).
+  const formatters = useMemo(
+    () => createFormatters(locale, hour12),
+    [locale, hour12],
+  );
 
   // Local "resources" mode. This is NOT a store `view` (the resources view is a
   // standalone view model the adapter drives), so we track it in component
@@ -222,6 +242,7 @@ export function Calendar(props: CalendarProps): JSX.Element {
       effectiveView,
       compactNav,
       stepPeriod,
+      formatters,
       resourcesActive,
       setResourceMode: setResourceModeCb,
       resourceView,
@@ -238,6 +259,7 @@ export function Calendar(props: CalendarProps): JSX.Element {
       effectiveView,
       compactNav,
       stepPeriod,
+      formatters,
       resourcesActive,
       setResourceModeCb,
       resourceView,

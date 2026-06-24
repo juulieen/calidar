@@ -15,7 +15,6 @@ import { useGridDrag, type ActiveDrag } from "./useGridDrag.js";
 import { useDayDrag, type ActiveDayDrag } from "./useDayDrag.js";
 import { useCommitEdit } from "./useCommitEdit.js";
 import { RecurrenceScopePopover } from "./RecurrenceScopePopover.js";
-import { formatHour, formatTime, formatWeekdayShort } from "./format.js";
 
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const COLUMN_GAP_PCT = 4; // horizontal breathing room between overlap columns
@@ -25,8 +24,9 @@ interface Props {
 }
 
 export function TimeGridView({ model }: Props): JSX.Element {
-  const { snapshot, onEventCreate, onEventClick, onSelectSlot } =
+  const { snapshot, onEventCreate, onEventClick, onSelectSlot, formatters } =
     useCalendarContext();
+  const { formatHour, formatTime, formatWeekdayShort } = formatters;
   const { hourHeight, timeZone, days, allDayBands, allDayLaneCount } = model;
   const gridHeight = 24 * hourHeight;
 
@@ -158,7 +158,7 @@ export function TimeGridView({ model }: Props): JSX.Element {
         <div className="cal-timegrid__gutter-spacer" aria-hidden="true" />
         <div className="cal-timegrid__day-heads">
           {days.map((day) => (
-            <DayHead key={day.dayStart} day={day} />
+            <DayHead key={day.dayStart} day={day} formatWeekdayShort={formatWeekdayShort} />
           ))}
         </div>
       </div>
@@ -242,12 +242,19 @@ export function TimeGridView({ model }: Props): JSX.Element {
                     timeZone={timeZone}
                     onClickEvent={onEventClick}
                     onStart={(e, mode) => drag.startEvent(e, layout.instance, mode, dayIndex)}
+                    formatTime={formatTime}
                   />
                 ))}
 
                 {/* Live preview ghost for this column */}
                 {drag.active && drag.active.dayIndex === dayIndex && (
-                  <PreviewGhost active={drag.active} day={day} gridHeight={gridHeight} timeZone={timeZone} />
+                  <PreviewGhost
+                    active={drag.active}
+                    day={day}
+                    gridHeight={gridHeight}
+                    timeZone={timeZone}
+                    formatTime={formatTime}
+                  />
                 )}
               </div>
             ))}
@@ -353,7 +360,13 @@ function AllDayPreview({
   );
 }
 
-function DayHead({ day }: { day: TimeGridViewModel["days"][number] }): JSX.Element {
+function DayHead({
+  day,
+  formatWeekdayShort,
+}: {
+  day: TimeGridViewModel["days"][number];
+  formatWeekdayShort: (date: TimeGridViewModel["days"][number]["date"]) => string;
+}): JSX.Element {
   return (
     <div
       className={`cal-day-head${day.isToday ? " cal-day-head--today" : ""}`}
@@ -371,6 +384,7 @@ interface TimedEventProps {
   timeZone: string;
   onClickEvent?: (instance: EventInstance) => void;
   onStart: (e: React.PointerEvent, mode: DragMode) => void;
+  formatTime: (epoch: number, timeZone: string) => string;
 }
 
 function TimedEvent({
@@ -379,6 +393,7 @@ function TimedEvent({
   timeZone,
   onClickEvent,
   onStart,
+  formatTime,
 }: TimedEventProps): JSX.Element {
   const { instance } = layout;
   const topPx = layout.top * gridHeight;
@@ -441,11 +456,13 @@ function PreviewGhost({
   day,
   gridHeight,
   timeZone,
+  formatTime,
 }: {
   active: ActiveDrag;
   day: TimeGridViewModel["days"][number];
   gridHeight: number;
   timeZone: string;
+  formatTime: (epoch: number, timeZone: string) => string;
 }): JSX.Element {
   const { preview } = active;
   const dayMs = day.dayEnd - day.dayStart;

@@ -46,6 +46,18 @@ export {
 export { useCommitEdit, type CommitEditApi } from "./useCommitEdit.js";
 export { RecurrenceScopePopover } from "./RecurrenceScopePopover.js";
 
+// Formatting helpers (locale / hour12 aware).
+export {
+  createFormatters,
+  formatTime,
+  formatHour,
+  formatWeekdayShort,
+  formatAgendaDay,
+  formatDayNumber,
+  formatRangeTitle,
+  type Formatters,
+} from "./format.js";
+
 // Re-export the most useful core types for convenience.
 export type {
   CalendarEvent,

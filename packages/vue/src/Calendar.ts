@@ -37,6 +37,7 @@ import { CalendarToolbar } from "./CalendarToolbar.js";
 import { TimeGridView } from "./TimeGridView.js";
 import { MonthView } from "./MonthView.js";
 import { AgendaView } from "./AgendaView.js";
+import { createFormatters } from "./format.js";
 
 /** Width below which the time views collapse to a compact day window. */
 const COMPACT_BREAKPOINT = 640;
@@ -59,6 +60,21 @@ export const Calendar = defineComponent({
      */
     responsive: { type: Boolean, default: true },
     className: { type: String, default: undefined },
+    /**
+     * BCP-47 locale for all labels (weekdays, titles, times). Overrides
+     * `navigator.language`. Omit to keep the host's runtime locale (default).
+     */
+    locale: { type: String, default: undefined },
+    /**
+     * Force a 12-hour (`true`) or 24-hour (`false`) clock for time labels. Omit
+     * to let `Intl` pick the locale's default hour cycle (default). Typed via
+     * `PropType` without listing `Boolean` in `type`, so an absent value stays
+     * `undefined` (Vue coerces a missing Boolean-typed prop to `false`).
+     */
+    hour12: {
+      type: null as unknown as PropType<boolean | undefined>,
+      default: undefined,
+    },
     // Host callbacks (function props, mirroring the React adapter).
     onEventCreate: {
       type: Function as PropType<(draft: EventDraft) => void>,
@@ -84,6 +100,11 @@ export const Calendar = defineComponent({
   setup(props) {
     const { store, snapshot } = useCalendar(
       props.store ?? props.options ?? {},
+    );
+
+    // Presentation-only formatters, reactive to the locale/hour12 props.
+    const formatters = computed(() =>
+      createFormatters(props.locale, props.hour12),
     );
 
     const rootRef = ref<HTMLDivElement | null>(null);
@@ -174,6 +195,7 @@ export const Calendar = defineComponent({
       effectiveView,
       compactNav,
       stepPeriod,
+      formatters,
       get onEventCreate() { return props.onEventCreate; },
       get onEventUpdate() { return props.onEventUpdate; },
       get onEventClick() { return props.onEventClick; },

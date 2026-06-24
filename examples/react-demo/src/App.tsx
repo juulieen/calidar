@@ -19,6 +19,12 @@ const TIME_ZONES = [
   "UTC",
 ] as const;
 
+const LOCALES = [
+  { value: "en-US", label: "English (US)" },
+  { value: "fr-FR", label: "Français" },
+  { value: "ja-JP", label: "日本語" },
+] as const;
+
 /** ISO date-time string (local-to-the-event) for `daysFromToday` at `h:m`. */
 function at(daysFromToday: number, hour: number, minute = 0): string {
   const d = new Date();
@@ -312,6 +318,8 @@ export function App(): JSX.Element {
   });
 
   const [lastAction, setLastAction] = useState<string>("");
+  const [locale, setLocale] = useState<string>("en-US");
+  const [hour12, setHour12] = useState<boolean | undefined>(undefined);
 
   return (
     <div className="demo">
@@ -333,6 +341,39 @@ export function App(): JSX.Element {
             ))}
           </select>
         </label>
+        <label className="demo__tz">
+          <span>Locale</span>
+          <select
+            id="locale-select"
+            name="locale"
+            aria-label="Display locale"
+            value={locale}
+            onChange={(e) => setLocale(e.target.value)}
+          >
+            {LOCALES.map((l) => (
+              <option key={l.value} value={l.value}>
+                {l.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="demo__tz">
+          <span>Clock</span>
+          <select
+            id="hour12-select"
+            name="hour12"
+            aria-label="Hour cycle"
+            value={hour12 === undefined ? "auto" : hour12 ? "12" : "24"}
+            onChange={(e) => {
+              const v = e.target.value;
+              setHour12(v === "auto" ? undefined : v === "12");
+            }}
+          >
+            <option value="auto">Auto</option>
+            <option value="12">12-hour</option>
+            <option value="24">24-hour</option>
+          </select>
+        </label>
         <span className="demo__hint">
           Drag any event to move it. Drag the all-day banners (or month cells)
           across days; drag the recurring “Daily standup” to pick an edit scope.
@@ -345,6 +386,8 @@ export function App(): JSX.Element {
       <div className="demo__cal">
         <Calendar
           store={store}
+          locale={locale}
+          hour12={hour12}
           onEventClick={(inst: EventInstance) =>
             setLastAction(`Clicked: ${inst.title}`)
           }

@@ -16,15 +16,18 @@
   import RecurringScopeDialog from "./RecurringScopeDialog.svelte";
   import type { EditBounds } from "./recurringEdit.js";
   import type { RecurringEditScope } from "./types.js";
-  import { formatHour, formatTime, formatWeekdayShort } from "./format.js";
+  import { createFormatters, type Formatters } from "./format.js";
 
   interface Props {
     store: CalendarStore;
     view: TimeGridViewModel;
     now: number;
     callbacks: CalendarCallbacks;
+    /** Locale-bound formatters (defaults to the runtime locale when omitted). */
+    formatters?: Formatters;
   }
-  const { store, view, now, callbacks }: Props = $props();
+  const { store, view, now, callbacks, formatters = createFormatters() }: Props = $props();
+  const { formatHour, formatTime, formatWeekdayShort } = $derived(formatters);
 
   const HOURS = Array.from({ length: 24 }, (_, h) => h);
   const GAP_PCT = 4; // ~horizontal gap between overlapping columns

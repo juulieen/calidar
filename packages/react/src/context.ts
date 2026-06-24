@@ -13,6 +13,7 @@ import type {
   ResourceViewModel,
   ViewModel,
 } from "@calidar/core";
+import type { Formatters } from "./format.js";
 
 /**
  * Compact-window descriptor present only when the responsive layer has
@@ -107,6 +108,12 @@ export interface CalendarContextValue extends CalendarCallbacks {
    * Timeline mode is active.
    */
   stepPeriod: (dir: 1 | -1) => void;
+  /**
+   * Locale-bound formatting helpers honouring the `locale` / `hour12`
+   * presentation props. Views read labels from here rather than importing the
+   * standalone helpers, so a forced locale flows through every view/toolbar.
+   */
+  formatters: Formatters;
   /** True while the local resources mode is active (overrides `snapshot.view`). */
   resourcesActive: boolean;
   /** Toggle the local resources mode on/off. */

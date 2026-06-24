@@ -6,6 +6,7 @@
   } from "@calidar/core";
   import { computeView, addDays, startOfDayEpoch, epochToPlainDate } from "@calidar/core";
   import { createCalendarState } from "./calendarState.svelte.js";
+  import { createFormatters } from "./format.js";
   import type { CalendarCallbacks } from "./types.js";
   import Toolbar from "./Toolbar.svelte";
   import TimeGridView from "./TimeGridView.svelte";
@@ -24,6 +25,16 @@
      * `true`; set `false` to keep the legacy fixed layout.
      */
     responsive?: boolean;
+    /**
+     * BCP-47 locale for all labels (weekdays, titles, times). Overrides
+     * `navigator.language`. Omit to keep the host's runtime locale (default).
+     */
+    locale?: string;
+    /**
+     * Force a 12-hour (`true`) or 24-hour (`false`) clock for time labels. Omit
+     * to let `Intl` pick the locale's default hour cycle (default).
+     */
+    hour12?: boolean;
   }
   const {
     options,
@@ -33,7 +44,13 @@
     onEventClick,
     onSelectSlot,
     responsive = true,
+    locale,
+    hour12,
   }: Props = $props();
+
+  // Presentation-only formatters bound to the locale/hour12 props, threaded to
+  // the toolbar and every view so a forced locale flows through all labels.
+  const formatters = $derived(createFormatters(locale, hour12));
 
   // Resolve the calendar exactly once during init. Reading the store/options
   // here is intentional: like React's useCalendar, we never swap the store
@@ -147,19 +164,20 @@
   role="application"
   aria-label="Calendar"
 >
-  <Toolbar store={cal.store} {snapshot} {onPrev} {onNext} {titleDays} />
+  <Toolbar store={cal.store} {snapshot} {onPrev} {onNext} {titleDays} {formatters} />
 
   <div class="cal-body">
     {#if snapshot.view.kind === "month"}
-      <MonthView store={cal.store} view={snapshot.view} {callbacks} />
+      <MonthView store={cal.store} view={snapshot.view} {callbacks} {formatters} />
     {:else if snapshot.view.kind === "agenda"}
-      <AgendaView view={snapshot.view} now={snapshot.now} {callbacks} />
+      <AgendaView view={snapshot.view} now={snapshot.now} {callbacks} {formatters} />
     {:else if compact && effectiveTimeGrid}
       <TimeGridView
         store={cal.store}
         view={effectiveTimeGrid}
         now={snapshot.now}
         {callbacks}
+        {formatters}
       />
     {:else}
       <TimeGridView
@@ -167,6 +185,7 @@
         view={snapshot.view}
         now={snapshot.now}
         {callbacks}
+        {formatters}
       />
     {/if}
   </div>

@@ -25,7 +25,6 @@ import {
 } from "./useDayDrag.js";
 import { useCommitEdit } from "./useCommitEdit.js";
 import { RecurrenceScopePopover } from "./RecurrenceScopePopover.js";
-import { formatWeekdayShort } from "./format.js";
 
 const MAX_LANES = 4; // bands shown per day before collapsing into "+N"
 const LANE_HEIGHT = 20;
@@ -37,7 +36,8 @@ export const MonthView = defineComponent({
     model: { type: Object as PropType<MonthViewModel>, required: true },
   },
   setup(props) {
-    const { store, onEventClick, onEventCreate } = useCalendarContext();
+    const { store, onEventClick, onEventCreate, formatters } =
+      useCalendarContext();
     const edit = useCommitEdit();
     const gridRef = ref<HTMLDivElement | null>(null);
 
@@ -100,6 +100,7 @@ export const MonthView = defineComponent({
     });
 
     return () => {
+      const { formatWeekdayShort } = formatters.value;
       const weeks = props.model.weeks;
       const firstWeek = weeks[0];
       const headerDates = firstWeek ? firstWeek.days.map((d) => d.date) : [];
