@@ -393,9 +393,15 @@ export function computeTimelineView(
   if (unit === "day") {
     rangeStart = startOfDayEpoch(cursorDate, tz);
     rangeEnd = startOfDayEpoch(addDays(cursorDate, 1), tz);
+    const showsToday = isSameDay(cursorDate, today);
     for (let h = 0; h < 24; h++) {
       const start = wallToEpoch({ ...cursorDate, hour: h, minute: 0, second: 0, millisecond: 0 }, tz);
-      slots.push({ start, left: frac(start, rangeStart, rangeEnd) });
+      const nextStart = wallToEpoch({ ...cursorDate, hour: h + 1, minute: 0, second: 0, millisecond: 0 }, tz);
+      slots.push({
+        start,
+        left: frac(start, rangeStart, rangeEnd),
+        isNow: showsToday && now >= start && now < nextStart,
+      });
     }
   } else {
     const first = unit === "week" ? startOfWeek(cursorDate, state.weekStartsOn) : { ...cursorDate, day: 1 };

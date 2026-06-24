@@ -48,6 +48,27 @@ describe("timeline view", () => {
     expect(allIds).not.toContain("e4");
   });
 
+  it("day unit: marks isNow on exactly the hour slot covering now", () => {
+    const s = store([{ id: "a", title: "A" }]);
+    // now = 2026-06-23 12:34 UTC → slot for hour 12 covers it.
+    const now = Date.UTC(2026, 5, 23, 12, 34);
+    const view = computeTimelineView(s.getState(), s.getEvents(), { unit: "day" }, now);
+
+    const nowSlots = view.slots.filter((sl) => sl.isNow);
+    expect(nowSlots).toHaveLength(1);
+    const idx = view.slots.findIndex((sl) => sl.isNow);
+    expect(idx).toBe(12);
+    expect(view.slots[12]!.start).toBe(Date.UTC(2026, 5, 23, 12));
+  });
+
+  it("day unit: no slot is isNow when the displayed day is not today", () => {
+    const s = store([{ id: "a", title: "A" }]);
+    // now is the previous day → none of the 23rd's hour slots cover it.
+    const now = Date.UTC(2026, 5, 22, 12);
+    const view = computeTimelineView(s.getState(), s.getEvents(), { unit: "day" }, now);
+    expect(view.slots.some((sl) => sl.isNow)).toBe(false);
+  });
+
   it("falls back to a single catch-all row when no resources", () => {
     const s = store([]);
     const view = computeTimelineView(s.getState(), s.getEvents(), { unit: "day" }, NOON);
