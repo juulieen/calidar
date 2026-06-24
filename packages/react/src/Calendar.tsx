@@ -7,11 +7,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   CalendarOptions,
   CalendarStore,
+  TimelineViewModel,
   ViewModel,
 } from "@calidar/core";
 import {
   computeView,
+  computeTimelineView,
   addDays,
+  addMonths,
   epochToPlainDate,
   startOfDayEpoch,
 } from "@calidar/core";
@@ -20,11 +23,13 @@ import {
   CalendarContext,
   type CalendarCallbacks,
   type CompactNav,
+  type TimelineUnit,
 } from "./context.js";
 import { CalendarToolbar } from "./CalendarToolbar.js";
 import { TimeGridView } from "./TimeGridView.js";
 import { MonthView } from "./MonthView.js";
 import { AgendaView } from "./AgendaView.js";
+import { TimelineView } from "./TimelineView.js";
 
 export interface CalendarProps extends CalendarCallbacks {
   /** Calendar configuration (used to create a store if `store` is absent). */
@@ -65,6 +70,23 @@ export function Calendar(props: CalendarProps): JSX.Element {
   const { store, snapshot } = useCalendar(externalStore ?? options ?? {});
 
   const rootRef = useRef<HTMLDivElement>(null);
+
+  // Adapter-LOCAL "Timeline" mode: a horizontal time axis with resources as
+  // rows. It never mutates `store.view` — we just render a separate view model
+  // when active, exactly like the Resource view does.
+  const [timelineActive, setTimelineActive] = useState(false);
+  const [timelineUnit, setTimelineUnit] = useState<TimelineUnit>("day");
+
+  // The timeline view model, recomputed from the live snapshot when active.
+  const timelineView = useMemo<TimelineViewModel | null>(() => {
+    if (!timelineActive) return null;
+    return computeTimelineView(
+      snapshot.state,
+      snapshot.events,
+      { unit: timelineUnit },
+      snapshot.now,
+    );
+  }, [timelineActive, timelineUnit, snapshot]);
 
   // Measure the root width so the time views can collapse on narrow screens.
   // `null` until the first measurement so we never flash the compact layout.
@@ -114,6 +136,19 @@ export function Calendar(props: CalendarProps): JSX.Element {
   // time view has been collapsed (advance N days instead of a whole week).
   const stepPeriod = useMemo(() => {
     return (dir: 1 | -1): void => {
+      if (timelineActive) {
+        // Step by the timeline unit (DST-safe: land at local midday).
+        const tz = snapshot.state.timeZone;
+        const cursorDate = epochToPlainDate(snapshot.state.cursor, tz);
+        const target =
+          timelineUnit === "day"
+            ? addDays(cursorDate, dir)
+            : timelineUnit === "week"
+              ? addDays(cursorDate, dir * 7)
+              : addMonths(cursorDate, dir);
+        store.setCursor(startOfDayEpoch(target, tz) + 12 * 3_600_000);
+        return;
+      }
       if (compactNav) {
         const tz = snapshot.state.timeZone;
         const cursorDate = epochToPlainDate(snapshot.state.cursor, tz);
@@ -126,7 +161,21 @@ export function Calendar(props: CalendarProps): JSX.Element {
         store.next();
       }
     };
-  }, [store, snapshot, compactNav]);
+  }, [store, snapshot, compactNav, timelineActive, timelineUnit]);
+
+  const timeline = useMemo(
+    () => ({
+      active: timelineActive,
+      unit: timelineUnit,
+      setActive: setTimelineActive,
+      setUnit: (unit: TimelineUnit) => {
+        // Selecting an explicit unit also activates the timeline.
+        setTimelineUnit(unit);
+        setTimelineActive(true);
+      },
+    }),
+    [timelineActive, timelineUnit],
+  );
 
   const ctx = useMemo(
     () => ({
@@ -135,6 +184,7 @@ export function Calendar(props: CalendarProps): JSX.Element {
       effectiveView,
       compactNav,
       stepPeriod,
+      timeline,
       onEventCreate,
       onEventUpdate,
       onEventClick,
@@ -147,6 +197,7 @@ export function Calendar(props: CalendarProps): JSX.Element {
       effectiveView,
       compactNav,
       stepPeriod,
+      timeline,
       onEventCreate,
       onEventUpdate,
       onEventClick,
@@ -190,7 +241,9 @@ export function Calendar(props: CalendarProps): JSX.Element {
       >
         {!hideToolbar && <CalendarToolbar />}
         <div className="calidar__view">
-          {view.kind === "month" ? (
+          {timelineView ? (
+            <TimelineView model={timelineView} now={snapshot.now} />
+          ) : view.kind === "month" ? (
             <MonthView model={view} />
           ) : view.kind === "agenda" ? (
             <AgendaView model={view} />
