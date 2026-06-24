@@ -40,7 +40,15 @@ const snap = cal.getSnapshot();
 `setView` · `setTimeZone` · `setWeekStartsOn` · `setVisibleDays` ·
 `setHourHeight` · `setCursor` · `goToDate` · `today` · `next` / `prev` /
 `step(n)` · `setEvents` · `addEvent` · `updateEvent(id, patch)` ·
-`removeEvent(id)` · `refresh`.
+`removeEvent(id)` · `batch(fn)` · `undo` / `redo` · `refresh`.
+
+## Undo / redo
+
+Event mutations are recorded on a bounded history (`historyLimit`, default 100).
+`undo()` / `redo()` move through it; `snapshot.canUndo` / `snapshot.canRedo`
+drive toolbar buttons. Wrap a multi-step edit (e.g. a recurrence split) in
+`store.batch(() => { ... })` so it reverts in a single undo. Navigation and view
+changes are **not** recorded — only event edits.
 
 ## View models
 

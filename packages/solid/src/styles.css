@@ -1,0 +1,1014 @@
+/**
+ * @calidar/react default theme — "Quiet Ink": a clear, refined, premium look
+ * (Cron / Notion Calendar family) driven entirely by CSS custom properties.
+ * Override any `--cal-*` token on the `.calidar` root (or an ancestor) to
+ * retheme. No external CSS dependencies, no external fonts.
+ */
+
+.calidar {
+  /* ---- Tokens (light) -------------------------------------------------- */
+  --cal-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Inter", sans-serif;
+  --cal-bg: #ffffff;
+  --cal-surface: #fbfbfa;
+  --cal-surface-hover: #f4f4f3;
+  --cal-elevated: #ffffff;
+  --cal-text: #18181b;
+  --cal-text-muted: #6b6b70;
+  --cal-text-subtle: #a1a1aa;
+  --cal-border: rgba(24, 24, 27, 0.07);
+  --cal-border-strong: rgba(24, 24, 27, 0.12);
+  --cal-accent: #4f46e5;
+  --cal-accent-hover: #4338ca;
+  --cal-accent-soft: rgba(79, 70, 229, 0.1);
+  --cal-today-tint: rgba(79, 70, 229, 0.045);
+  --cal-on-accent: #ffffff;
+  --cal-now: #e5484d;
+  --cal-radius: 12px;
+  --cal-radius-control: 8px;
+  --cal-radius-event: 7px;
+  --cal-shadow-1: 0 1px 2px rgba(24, 24, 27, 0.06),
+    0 1px 1px rgba(24, 24, 27, 0.04);
+  --cal-shadow-2: 0 6px 16px rgba(24, 24, 27, 0.1),
+    0 2px 6px rgba(24, 24, 27, 0.06);
+  --cal-dur: 140ms;
+
+  /* Half-hour line tint (subtle, theme-aware). */
+  --cal-halfline: rgba(24, 24, 27, 0.035);
+
+  /* Density */
+  --cal-gap: 8px;
+  --cal-hour-height: 48px;
+
+  /* Effective event color: explicit color or accent fallback. */
+  --cal-ev: var(--cal-event-color, var(--cal-accent));
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--cal-bg);
+  color: var(--cal-text);
+  font-family: var(--cal-font);
+  font-size: 13px;
+  line-height: 1.4;
+  box-sizing: border-box;
+  outline: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-numeric: tabular-nums;
+}
+
+.calidar *,
+.calidar *::before,
+.calidar *::after {
+  box-sizing: border-box;
+}
+
+.calidar :focus-visible {
+  outline: 2px solid var(--cal-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Resolve the effective event colour on each event element itself: custom
+   properties inherit their *computed* value, so `--cal-ev` must be evaluated
+   where `--cal-event-color` is set (per event) — not once on the root, which
+   would lock every event to the accent fallback. */
+.cal-event,
+.cal-band,
+.cal-agenda__chip {
+  --cal-ev: var(--cal-event-color, var(--cal-accent));
+}
+
+.calidar__view {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ---- Dark mode --------------------------------------------------------- */
+
+@media (prefers-color-scheme: dark) {
+  .calidar {
+    --cal-bg: #0f0f11;
+    --cal-surface: #161618;
+    --cal-surface-hover: #1d1d20;
+    --cal-elevated: #1a1a1d;
+    --cal-text: #ececee;
+    --cal-text-muted: #9b9ba3;
+    --cal-text-subtle: #6b6b73;
+    --cal-border: rgba(255, 255, 255, 0.08);
+    --cal-border-strong: rgba(255, 255, 255, 0.14);
+    --cal-accent: #818cf8;
+    --cal-accent-hover: #a5b0ff;
+    --cal-accent-soft: rgba(129, 140, 248, 0.14);
+    --cal-today-tint: rgba(129, 140, 248, 0.07);
+    --cal-on-accent: #0f0f11;
+    --cal-now: #ff6b6b;
+    --cal-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --cal-shadow-2: 0 8px 24px rgba(0, 0, 0, 0.5);
+    --cal-halfline: rgba(255, 255, 255, 0.04);
+  }
+}
+
+/* ---- Toolbar ----------------------------------------------------------- */
+
+.cal-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--cal-gap);
+  padding: 0 16px;
+  min-height: 56px;
+  background: var(--cal-bg);
+  border-bottom: 1px solid var(--cal-border);
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+
+.cal-toolbar__nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cal-toolbar__title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  flex: 1 1 auto;
+  white-space: nowrap;
+  color: var(--cal-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Segmented control wrapping the view buttons. */
+.cal-toolbar__views {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--cal-surface);
+  border: 1px solid var(--cal-border);
+  border-radius: var(--cal-radius-control);
+  padding: 3px;
+}
+
+/* Generic button base (Today / nav icons). */
+.cal-btn {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--cal-text);
+  border-radius: var(--cal-radius-control);
+  padding: 0 12px;
+  min-height: 32px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--cal-dur) ease, color var(--cal-dur) ease,
+    border-color var(--cal-dur) ease, box-shadow var(--cal-dur) ease;
+}
+
+/* "Today" = ghost button with a hairline border. */
+.cal-toolbar__nav > .cal-btn:not(.cal-btn--icon) {
+  border-color: var(--cal-border-strong);
+}
+
+.cal-btn:hover {
+  background: var(--cal-surface-hover);
+}
+
+.cal-btn:focus-visible {
+  outline: 2px solid var(--cal-accent);
+  outline-offset: 2px;
+}
+
+/* Ghost icon buttons (prev / next). */
+.cal-btn--icon {
+  min-width: 32px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--cal-text-muted);
+}
+
+.cal-btn--icon:hover {
+  color: var(--cal-text);
+}
+
+/* Segmented control items. */
+.cal-btn--view {
+  border: none;
+  background: transparent;
+  color: var(--cal-text-muted);
+  font-size: 13px;
+  min-height: 26px;
+  padding: 5px 12px;
+  border-radius: 6px;
+}
+
+.cal-btn--view:hover {
+  background: transparent;
+  color: var(--cal-text);
+}
+
+.cal-btn--view.cal-btn--active {
+  background: var(--cal-elevated);
+  color: var(--cal-text);
+  font-weight: 600;
+  box-shadow: var(--cal-shadow-1);
+}
+
+/* The view buttons carry both a full and a short label; show the full one by
+   default and swap to the short one only on very narrow toolbars (below). */
+.cal-btn__label--short {
+  display: none;
+}
+
+/* ---- Time grid --------------------------------------------------------- */
+
+.cal-timegrid {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  --cal-gutter-w: 56px;
+}
+
+.cal-timegrid__head {
+  display: flex;
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--cal-border);
+  background: var(--cal-bg);
+  /* Reserve the same width the scroll area loses to its scrollbar, so the day
+     columns stay aligned with their headers. */
+  padding-right: var(--cal-scrollbar, 0px);
+}
+
+.cal-timegrid__gutter-spacer {
+  flex: 0 0 var(--cal-gutter-w);
+  width: var(--cal-gutter-w);
+}
+
+.cal-timegrid__day-heads {
+  display: flex;
+  flex: 1 1 auto;
+}
+
+.cal-day-head {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 0;
+  border-left: 1px solid var(--cal-border);
+}
+
+.cal-day-head__name {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cal-text-subtle);
+}
+
+.cal-day-head__num {
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--cal-text);
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+}
+
+.cal-day-head--today .cal-day-head__name {
+  color: var(--cal-accent);
+}
+
+.cal-day-head--today .cal-day-head__num {
+  background: var(--cal-accent);
+  color: var(--cal-on-accent);
+  border-radius: 50%;
+}
+
+/* All-day band */
+.cal-timegrid__allday {
+  display: flex;
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--cal-border);
+  background: var(--cal-surface);
+  /* Match the scrollbar gutter reserved by the grid below (see __head). */
+  padding-right: var(--cal-scrollbar, 0px);
+}
+
+.cal-timegrid__allday-label {
+  font-size: 10px;
+  color: var(--cal-text-subtle);
+  text-align: right;
+  padding: 4px 8px 0 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cal-timegrid__allday-lanes {
+  position: relative;
+  flex: 1 1 auto;
+  padding: 3px 0;
+}
+
+/* Scroll area */
+.cal-timegrid__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* Always reserve the scrollbar gutter so columns don't reflow when the
+     scrollbar appears, and so the measured width stays constant. */
+  scrollbar-gutter: stable;
+  contain: layout paint;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(24, 24, 27, 0.18) transparent;
+}
+
+.cal-timegrid__scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.cal-timegrid__scroll::-webkit-scrollbar-thumb {
+  background: rgba(24, 24, 27, 0.18);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+@media (prefers-color-scheme: dark) {
+  .cal-timegrid__scroll {
+    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  }
+  .cal-timegrid__scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    background-clip: content-box;
+  }
+}
+
+.cal-timegrid__body {
+  display: flex;
+  position: relative;
+}
+
+.cal-timegrid__gutter {
+  flex: 0 0 var(--cal-gutter-w);
+  width: var(--cal-gutter-w);
+  background: var(--cal-surface);
+}
+
+.cal-timegrid__hour {
+  position: relative;
+}
+
+.cal-timegrid__hour-label {
+  position: absolute;
+  top: -7px;
+  right: 8px;
+  font-size: 11px;
+  color: var(--cal-text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.cal-timegrid__columns {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+}
+
+.cal-timegrid__lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Full hour line + a subtle half-hour line via a gradient. */
+.cal-timegrid__line {
+  border-top: 1px solid var(--cal-border);
+  background-image: linear-gradient(
+    to bottom,
+    transparent calc(50% - 0.5px),
+    var(--cal-halfline) calc(50% - 0.5px),
+    var(--cal-halfline) calc(50% + 0.5px),
+    transparent calc(50% + 0.5px)
+  );
+}
+
+.cal-col {
+  position: relative;
+  flex: 1 1 0;
+  border-left: 1px solid var(--cal-border);
+  touch-action: pan-y;
+}
+
+.cal-col--today {
+  background: var(--cal-today-tint);
+}
+
+.cal-col--weekend {
+  background: transparent;
+}
+
+/* Timed event (signature treatment) */
+.cal-event {
+  position: absolute;
+  border-radius: var(--cal-radius-event);
+  background: color-mix(in srgb, var(--cal-ev) 12%, var(--cal-bg));
+  box-shadow: inset 3px 0 0 var(--cal-ev);
+  border: 1px solid color-mix(in srgb, var(--cal-ev) 22%, transparent);
+  color: color-mix(in srgb, var(--cal-ev) 70%, var(--cal-text));
+  padding: 3px 8px;
+  overflow: hidden;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+  display: flex;
+  flex-direction: column;
+  z-index: 2;
+  transition: background var(--cal-dur) ease, box-shadow var(--cal-dur) ease;
+}
+
+.cal-event:hover {
+  background: color-mix(in srgb, var(--cal-ev) 18%, var(--cal-bg));
+  box-shadow: inset 3px 0 0 var(--cal-ev), var(--cal-shadow-1);
+}
+
+.cal-event:focus-visible {
+  outline: 2px solid var(--cal-accent);
+  outline-offset: 1px;
+}
+
+.cal-event__time {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--cal-ev) 55%, var(--cal-text-muted));
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.cal-event__title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Locked / non-editable: muted grey, no vivid color. */
+.cal-event--locked {
+  background: var(--cal-surface);
+  box-shadow: inset 3px 0 0 var(--cal-text-subtle);
+  border-color: var(--cal-border-strong);
+  color: var(--cal-text-muted);
+  opacity: 0.9;
+  cursor: default;
+}
+
+.cal-event--locked:hover {
+  background: var(--cal-surface);
+  box-shadow: inset 3px 0 0 var(--cal-text-subtle);
+}
+
+.cal-event--locked .cal-event__time {
+  color: var(--cal-text-muted);
+}
+
+.cal-event--preview {
+  opacity: 0.85;
+  z-index: 5;
+  pointer-events: none;
+  outline: 2px dashed var(--cal-accent);
+  outline-offset: -2px;
+}
+
+.cal-event__handle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+.cal-event__handle--top {
+  top: 0;
+}
+
+.cal-event__handle--bottom {
+  bottom: 0;
+}
+
+/* Now line */
+.cal-now {
+  position: absolute;
+  height: 0;
+  border-top: 1.5px solid var(--cal-now);
+  z-index: 4;
+  pointer-events: none;
+}
+
+.cal-now__dot {
+  position: absolute;
+  left: -4px;
+  top: -5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--cal-now);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cal-now) 18%, transparent);
+}
+
+/* ---- Multi-day / all-day bands ---------------------------------------- */
+
+.cal-band {
+  position: absolute;
+  appearance: none;
+  border: none;
+  text-align: left;
+  height: 22px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--cal-ev) 16%, var(--cal-bg));
+  color: color-mix(in srgb, var(--cal-ev) 70%, var(--cal-text));
+  font-size: 12px;
+  font-weight: 550;
+  padding: 0 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background var(--cal-dur) ease;
+}
+
+.cal-band:hover {
+  background: color-mix(in srgb, var(--cal-ev) 24%, var(--cal-bg));
+}
+
+.cal-band__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cal-band--allday {
+  height: 22px;
+  user-select: none;
+  touch-action: none;
+}
+
+/* Draggable bands get a grab cursor; locked ones stay inert. */
+.cal-band--allday:not(.cal-band--locked),
+.cal-band--month:not(.cal-band--locked) {
+  cursor: grab;
+}
+
+.cal-band--allday:not(.cal-band--locked):active,
+.cal-band--month:not(.cal-band--locked):active {
+  cursor: grabbing;
+}
+
+/* Locked / non-editable band: muted grey, no drag. */
+.cal-band--locked {
+  background: var(--cal-surface);
+  color: var(--cal-text-muted);
+  cursor: default;
+}
+
+.cal-band--locked:hover {
+  background: var(--cal-surface);
+}
+
+/* Resize handles on the left/right edges of an all-day band. */
+.cal-band__handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  cursor: ew-resize;
+  touch-action: none;
+  z-index: 1;
+}
+
+.cal-band__handle--start {
+  left: 0;
+}
+
+.cal-band__handle--end {
+  right: 0;
+}
+
+/* Drag preview ghost for whole-day spans (all-day strip + month). */
+.cal-band--preview {
+  pointer-events: none;
+  z-index: 6;
+  background: var(--cal-accent-soft);
+  outline: 2px dashed var(--cal-accent);
+  outline-offset: -2px;
+  opacity: 0.9;
+}
+
+.cal-month__bands .cal-band--preview {
+  pointer-events: none;
+}
+
+.cal-month__days {
+  touch-action: pan-y;
+}
+
+/* ---- Month view -------------------------------------------------------- */
+
+.cal-month {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.cal-month__head {
+  display: flex;
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--cal-border);
+  background: var(--cal-bg);
+}
+
+.cal-month__head-cell {
+  flex: 1 1 0;
+  text-align: center;
+  padding: 8px 0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cal-text-subtle);
+}
+
+.cal-month__grid {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Resize/move preview ghost is rendered at the grid level so it can span
+   several week rows; keep it above the bands and clear of pointer events. */
+.cal-band--month-preview {
+  position: absolute;
+  z-index: 7;
+  pointer-events: none;
+}
+
+.cal-month__week {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 80px;
+  border-bottom: 1px solid var(--cal-border);
+}
+
+.cal-month__days {
+  display: flex;
+  height: 100%;
+}
+
+.cal-month__day {
+  appearance: none;
+  border: none;
+  border-left: 1px solid var(--cal-border);
+  background: transparent;
+  flex: 1 1 0;
+  text-align: left;
+  padding: 6px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--cal-text);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  transition: background var(--cal-dur) ease;
+}
+
+.cal-month__day:hover {
+  background: var(--cal-surface-hover);
+}
+
+.cal-month__day:first-child {
+  border-left: none;
+}
+
+.cal-month__day--out {
+  background: var(--cal-surface);
+  color: var(--cal-text-subtle);
+}
+
+.cal-month__day--out:hover {
+  background: var(--cal-surface-hover);
+}
+
+.cal-month__day--weekend {
+  background: transparent;
+}
+
+.cal-month__daynum {
+  font-size: 13px;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.cal-month__day--out .cal-month__daynum {
+  color: var(--cal-text-subtle);
+}
+
+.cal-month__day--today .cal-month__daynum {
+  background: var(--cal-accent);
+  color: var(--cal-on-accent);
+  border-radius: 50%;
+}
+
+.cal-month__bands {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 32px;
+  pointer-events: none;
+}
+
+.cal-month__bands .cal-band {
+  pointer-events: auto;
+}
+
+.cal-month__more {
+  position: absolute;
+  bottom: -18px;
+  font-size: 11px;
+  color: var(--cal-text-muted);
+  padding-left: 8px;
+  cursor: pointer;
+  transition: color var(--cal-dur) ease;
+}
+
+.cal-month__more:hover {
+  color: var(--cal-accent);
+}
+
+/* ---- Agenda view ------------------------------------------------------- */
+
+.cal-agenda {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  contain: layout paint;
+  padding: 8px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(24, 24, 27, 0.18) transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  .cal-agenda {
+    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  }
+}
+
+.cal-agenda--empty {
+  color: var(--cal-text-muted);
+  padding: 24px;
+  text-align: center;
+}
+
+.cal-agenda__section {
+  margin-bottom: 16px;
+}
+
+.cal-agenda__date {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  position: sticky;
+  top: 0;
+  background: var(--cal-bg);
+  padding: 6px 0;
+  color: var(--cal-text);
+}
+
+.cal-agenda__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cal-agenda__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  appearance: none;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: var(--cal-text);
+  padding: 8px 10px;
+  min-height: 44px;
+  border-radius: var(--cal-radius-control);
+  cursor: pointer;
+  transition: background var(--cal-dur) ease;
+}
+
+.cal-agenda__row:hover {
+  background: var(--cal-surface-hover);
+}
+
+.cal-agenda__chip {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--cal-ev);
+}
+
+.cal-agenda__time {
+  flex: 0 0 130px;
+  color: var(--cal-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cal-agenda__title {
+  font-weight: 550;
+}
+
+/* ---- Responsive / touch ------------------------------------------------ */
+
+@media (max-width: 640px) {
+  .calidar {
+    font-size: 12px;
+  }
+  .cal-toolbar {
+    padding: 8px 12px;
+    flex-wrap: nowrap;
+  }
+  .cal-toolbar__title {
+    order: -1;
+    width: 100%;
+    font-size: 16px;
+  }
+  /* Keep the segmented control on one line; let it scroll if it overflows the
+     narrow toolbar rather than wrapping or pushing the nav buttons off-screen. */
+  .cal-toolbar__views {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .cal-toolbar__views::-webkit-scrollbar {
+    display: none;
+  }
+  .cal-btn--view {
+    flex: 0 0 auto;
+  }
+  .cal-timegrid {
+    --cal-gutter-w: 44px;
+  }
+  /* Comfortable touch targets. */
+  .cal-btn {
+    min-height: 44px;
+  }
+  .cal-btn--icon {
+    min-width: 44px;
+  }
+  .cal-btn--view {
+    min-height: 36px;
+  }
+  .cal-day-head__num {
+    font-size: 16px;
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* Very narrow: swap to the short view labels so the segmented control fits. */
+@media (max-width: 420px) {
+  .cal-btn__label--full {
+    display: none;
+  }
+  .cal-btn__label--short {
+    display: inline;
+  }
+  .cal-btn--view {
+    padding: 5px 9px;
+  }
+}
+
+/* ---- Recurring edit scope popover ------------------------------------- */
+
+.cal-recur__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(24, 24, 27, 0.18);
+  padding: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .cal-recur__backdrop {
+    background: rgba(0, 0, 0, 0.45);
+  }
+}
+
+.cal-recur {
+  width: min(92vw, 360px);
+  background: var(--cal-elevated);
+  color: var(--cal-text);
+  border: 1px solid var(--cal-border);
+  border-radius: var(--cal-radius);
+  box-shadow: var(--cal-shadow-2);
+  padding: 18px;
+  font-family: var(--cal-font);
+}
+
+.cal-recur__title {
+  margin: 0 0 2px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--cal-text);
+}
+
+.cal-recur__subtitle {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: var(--cal-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-recur__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cal-recur__action {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  color: var(--cal-text);
+  background: var(--cal-surface);
+  border: 1px solid var(--cal-border);
+  border-radius: var(--cal-radius-control);
+  cursor: pointer;
+  transition: background var(--cal-dur) ease, border-color var(--cal-dur) ease;
+}
+
+.cal-recur__action:hover {
+  background: var(--cal-surface-hover);
+  border-color: var(--cal-border-strong);
+}
+
+.cal-recur__action:focus-visible {
+  outline: 2px solid var(--cal-accent);
+  outline-offset: 2px;
+}
+
+.cal-recur__action--cancel {
+  margin-top: 4px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--cal-text-muted);
+  justify-content: center;
+}
+
+.cal-recur__action--cancel:hover {
+  background: var(--cal-surface-hover);
+  color: var(--cal-text);
+}
+
+/* ---- Reduced motion ---------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .calidar * {
+    transition: none !important;
+  }
+}
