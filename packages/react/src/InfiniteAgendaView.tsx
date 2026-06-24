@@ -42,6 +42,13 @@ const CHUNK_DAYS = 21;
 const MAX_RANGE_DAYS = 2000;
 /** Extra pixels above/below the viewport kept mounted while virtualising. */
 const VIRTUAL_BUFFER_PX = 800;
+/**
+ * Distance (px) from the top/bottom edge at which a sentinel fires to extend
+ * the range. A *fixed* threshold (rather than one tied to `clientHeight`) is
+ * important: when the view starts near the top, `scrollTop < clientHeight`
+ * stays permanently true and prepends fire on every scroll frame.
+ */
+const SENTINEL_PX = 300;
 
 /** One materialised day that carries at least one instance. */
 interface DaySection {
@@ -135,10 +142,9 @@ export function InfiniteAgendaView(): JSX.Element {
   // Measured geometry per dayStart, kept across renders so off-screen spacers
   // can reserve the right height. Pruned to the live sections each render.
   const measuredRef = useRef<Map<number, Measured>>(new Map());
-  // Scroll position drives the virtualisation window; bumped on scroll/resize.
+  // Scroll position drives the virtualisation window; bumped on scroll/resize
+  // and whenever a measure pass changes geometry.
   const [scrollTick, setScrollTick] = useState(0);
-  // Re-measure trigger fired after layout commits.
-  const [measureTick, setMeasureTick] = useState(0);
 
   // ---- Recentre when the cursor / zone changes (toolbar nav, Today) --------
   const lastCursorDay = useRef(dayStartOf(cursor, tz));
@@ -157,9 +163,18 @@ export function InfiniteAgendaView(): JSX.Element {
   }, [cursor, tz]);
 
   // ---- Extend the range (append / prepend) ---------------------------------
+  // Guards prevent the sentinel (still satisfied while the new block lays out)
+  // from re-firing and stacking range extensions before the previous one has
+  // been applied. Released once the new sections are committed (see effect).
+  const extendingForward = useRef(false);
   const extendForward = useCallback(() => {
+    if (extendingForward.current) return;
+    extendingForward.current = true;
     setRange((r) => {
-      if (r.end - r.start >= MAX_RANGE_DAYS * 86_400_000) return r;
+      if (r.end - r.start >= MAX_RANGE_DAYS * 86_400_000) {
+        extendingForward.current = false;
+        return r;
+      }
       const end = startOfDayEpoch(addDays(epochToPlainDate(r.end, tz), CHUNK_DAYS), tz);
       return { start: r.start, end };
     });
@@ -168,7 +183,16 @@ export function InfiniteAgendaView(): JSX.Element {
   // Prepend must preserve scroll position: remember the anchor section + its
   // offset, restore after the new block is laid out.
   const prependAnchor = useRef<{ dayStart: number; offsetWithinScroller: number } | null>(null);
+  // Guards against re-triggering a prepend before the range change has been
+  // applied *and* the scroll compensation has run. Without this, the sentinel
+  // (still satisfied while the new block lays out) fires repeatedly and a
+  // second `extendBackward` overwrites `prependAnchor` before compensation,
+  // making the viewport jump.
+  const extendingBackward = useRef(false);
   const extendBackward = useCallback(() => {
+    // Don't stack prepends: one must finish (range applied + scroll restored)
+    // before another can start.
+    if (extendingBackward.current || prependAnchor.current) return;
     const scroller = scrollerRef.current;
     if (scroller) {
       // Anchor on the first currently-rendered section we can find.
@@ -179,8 +203,15 @@ export function InfiniteAgendaView(): JSX.Element {
         prependAnchor.current = { dayStart, offsetWithinScroller: offset };
       }
     }
+    extendingBackward.current = true;
     setRange((r) => {
-      if (r.end - r.start >= MAX_RANGE_DAYS * 86_400_000) return r;
+      if (r.end - r.start >= MAX_RANGE_DAYS * 86_400_000) {
+        // Range capped: nothing will change, so release the guard and drop the
+        // anchor (no compensation needed).
+        extendingBackward.current = false;
+        prependAnchor.current = null;
+        return r;
+      }
       const start = startOfDayEpoch(addDays(epochToPlainDate(r.start, tz), -CHUNK_DAYS), tz);
       return { start, end: r.end };
     });
@@ -189,6 +220,25 @@ export function InfiniteAgendaView(): JSX.Element {
   // ---- Measure sections after each layout ----------------------------------
   // We read live (non-spacer) section nodes and store their offset/height.
   const sectionRefs = useRef<Map<number, HTMLElement>>(new Map());
+
+  // Stable per-section ref callbacks. Recreating the callback inline on every
+  // render makes React detach (call with null) and re-attach (call with node)
+  // the ref on each render; caching by dayStart keeps the callback identity
+  // stable so the ref only fires on real mount/unmount.
+  const registerRefCache = useRef<Map<number, (el: HTMLElement | null) => void>>(new Map());
+  const getRegisterRef = useCallback((dayStart: number) => {
+    const cache = registerRefCache.current;
+    let cb = cache.get(dayStart);
+    if (!cb) {
+      cb = (el: HTMLElement | null): void => {
+        if (el) sectionRefs.current.set(dayStart, el);
+        else sectionRefs.current.delete(dayStart);
+      };
+      cache.set(dayStart, cb);
+    }
+    return cb;
+  }, []);
+
   useLayoutEffect(() => {
     const scroller = scrollerRef.current;
     if (!scroller) return;
@@ -205,20 +255,25 @@ export function InfiniteAgendaView(): JSX.Element {
         changed = true;
       }
     }
-    // Prune measurements for days no longer in range.
+    // Prune measurements (and cached ref callbacks) for days no longer in range.
     const live = new Set(sections.map((s) => s.dayStart));
     for (const k of [...measuredRef.current.keys()]) {
       if (!live.has(k)) measuredRef.current.delete(k);
     }
+    for (const k of [...registerRefCache.current.keys()]) {
+      if (!live.has(k)) registerRefCache.current.delete(k);
+    }
     if (changed) setScrollTick((t) => t + 1);
-  });
+  }, [sections]);
 
   // ---- Restore scroll after a prepend / recentre ---------------------------
   useLayoutEffect(() => {
     const scroller = scrollerRef.current;
     if (!scroller) return;
 
-    // Prepend compensation: keep the anchored section visually still.
+    // Prepend compensation: keep the anchored section visually still. Clearing
+    // the anchor and releasing the backward guard here (after the new block is
+    // laid out and scrollTop corrected) is what lets the next prepend start.
     const anchor = prependAnchor.current;
     if (anchor) {
       prependAnchor.current = null;
@@ -229,6 +284,7 @@ export function InfiniteAgendaView(): JSX.Element {
         const cur = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
         scroller.scrollTop += cur - anchor.offsetWithinScroller;
       }
+      extendingBackward.current = false;
     }
 
     // Recentre: scroll the cursor day (or the nearest following section) into
@@ -260,7 +316,7 @@ export function InfiniteAgendaView(): JSX.Element {
         scroller.scrollTop = Math.max(0, bestTop);
       }
     }
-  });
+  }, [sections]);
 
   // ---- Scroll / resize bookkeeping + sentinel detection --------------------
   useEffect(() => {
@@ -273,11 +329,12 @@ export function InfiniteAgendaView(): JSX.Element {
         raf = 0;
         setScrollTick((t) => t + 1);
         const { scrollTop, scrollHeight, clientHeight } = scroller;
-        // Near bottom → append; near top → prepend.
-        if (scrollHeight - (scrollTop + clientHeight) < clientHeight) {
+        // Near bottom → append; near top → prepend. Fixed-pixel sentinels so a
+        // view that rests near the top doesn't prepend on every frame.
+        if (scrollHeight - (scrollTop + clientHeight) < SENTINEL_PX) {
           extendForward();
         }
-        if (scrollTop < clientHeight) {
+        if (scrollTop < SENTINEL_PX) {
           extendBackward();
         }
       });
@@ -292,9 +349,12 @@ export function InfiniteAgendaView(): JSX.Element {
     };
   }, [extendForward, extendBackward]);
 
-  // After sections change, schedule a measure pass so spacers get real heights.
+  // Once the new sections are committed, release the forward-extension guard so
+  // a later scroll can append again. (The measure layout effect above already
+  // refreshes spacer heights and bumps `scrollTick`, so no extra tick is needed
+  // here.) The backward guard is released by the prepend-compensation effect.
   useEffect(() => {
-    setMeasureTick((t) => t + 1);
+    extendingForward.current = false;
   }, [sections]);
 
   // ---- Decide which sections render live vs. as a spacer -------------------
@@ -306,9 +366,8 @@ export function InfiniteAgendaView(): JSX.Element {
   const windowTop = viewTop - VIRTUAL_BUFFER_PX;
   const windowBottom = viewBottom + VIRTUAL_BUFFER_PX;
 
-  // Reference these ticks so the window recomputes on scroll / remeasure.
+  // Reference the tick so the window recomputes on scroll / remeasure.
   void scrollTick;
-  void measureTick;
 
   return (
     <div
@@ -343,10 +402,7 @@ export function InfiniteAgendaView(): JSX.Element {
                 section={section}
                 timeZone={tz}
                 onClick={onEventClick}
-                registerRef={(el) => {
-                  if (el) sectionRefs.current.set(section.dayStart, el);
-                  else sectionRefs.current.delete(section.dayStart);
-                }}
+                registerRef={getRegisterRef(section.dayStart)}
               />
             );
           })
