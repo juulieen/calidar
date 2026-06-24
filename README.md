@@ -40,7 +40,7 @@ because that's what your users already know how to use.
 |---|---|
 | 🗓️ **5 views** | Day · N-day (e.g. 3-day) · Week · Month · Agenda |
 | 🌍 **Timezones** | Every instant is correct across DST, built on native `Intl` — no Moment/Luxon |
-| 🔁 **Recurrence** | `FREQ`, `INTERVAL`, `COUNT`, `UNTIL`, `BYDAY` (incl. `3MO`/`-1FR`), `BYMONTHDAY`, `BYMONTH`, `EXDATE` |
+| 🔁 **Recurrence** | `FREQ`, `INTERVAL`, `COUNT`, `UNTIL`, `BYDAY` (incl. `3MO`/`-1FR`), `BYMONTHDAY`, `BYMONTH`, `EXDATE`, `RDATE` |
 | ✋ **Interactions** | Drag to move, resize edges, drag-to-create — Pointer Events, so mouse + touch + pen |
 | 📱 **Responsive** | Touch targets ≥ 44px, mobile breakpoints, momentum scroll, `contain` for paint isolation |
 | ⚡ **Performance** | Windowed recurrence expansion (only the visible range is materialised), memoised snapshots, bounded DOM |
@@ -129,7 +129,8 @@ interface CalendarEvent {
   allDay?: boolean;
   timeZone?: string;        // IANA; defaults to the calendar's display zone
   rrule?: string;           // "FREQ=WEEKLY;BYDAY=MO,WE"
-  exdates?: (string | number)[];
+  exdates?: (string | number)[];  // dates removed from the set
+  rdates?: (string | number)[];   // extra dates added to the set
   color?: string;
   editable?: boolean;
   meta?: Record<string, unknown>;
