@@ -10,6 +10,7 @@ import type {
   CalendarSnapshot,
   CalendarStore,
   EventInstance,
+  ResourceViewModel,
   ViewModel,
 } from "@calidar/core";
 
@@ -49,6 +50,8 @@ export interface EventDraft {
   /** Absolute end instant (epoch ms, UTC). */
   end: number;
   allDay: boolean;
+  /** Resource the slot belongs to, when drafted in the resources view. */
+  resourceId?: string;
 }
 
 /** Scope of a recurring-instance edit. Mirrors `@calidar/core`. */
@@ -75,7 +78,7 @@ export interface CalendarCallbacks {
   /** Fired on a plain click of an existing event. */
   onEventClick?: (instance: EventInstance) => void;
   /** Fired when the user selects a slot without dragging far enough to create. */
-  onSelectSlot?: (range: { start: number; end: number }) => void;
+  onSelectSlot?: (range: { start: number; end: number; resourceId?: string }) => void;
   /**
    * Intercept the application of a recurring-instance edit. Return `true` to
    * signal you've handled the mutation yourself (the adapter then skips its
@@ -98,11 +101,18 @@ export interface CalendarContextValue extends CalendarCallbacks {
   /** Non-null only while a compact day window is active (see {@link CompactNav}). */
   compactNav: CompactNav | null;
   /**
-   * Advance the cursor by one rendered period: a whole view step normally, or
-   * `compactNav.nDays` days while the compact window is active. While the
-   * Timeline mode is active it steps by the timeline unit (day/week/month).
+   * Advance the cursor by one rendered period: a whole view step normally, one
+   * day while the resources mode is active, `compactNav.nDays` days while the
+   * compact window is active, or the timeline unit (day/week/month) while the
+   * Timeline mode is active.
    */
   stepPeriod: (dir: 1 | -1) => void;
+  /** True while the local resources mode is active (overrides `snapshot.view`). */
+  resourcesActive: boolean;
+  /** Toggle the local resources mode on/off. */
+  setResourceMode: (on: boolean) => void;
+  /** The resources view model while the mode is active, else null. */
+  resourceView: ResourceViewModel | null;
   /** Adapter-local Timeline view mode (see {@link TimelineMode}). */
   timeline: TimelineMode;
 }

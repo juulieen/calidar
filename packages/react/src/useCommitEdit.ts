@@ -81,8 +81,18 @@ export function useCommitEdit(): CommitEditApi {
         });
         const ids = new Set(store.getEvents().map((e) => e.id));
         for (const ev of mutation.update) {
-          if (ids.has(ev.id)) store.updateEvent(ev.id, ev);
-          else store.addEvent(ev);
+          if (ids.has(ev.id)) {
+            // Merge resourceId into the store mutation when the event was also
+            // reassigned to a different resource column.
+            const update = patch.resourceId
+              ? { ...ev, resourceId: patch.resourceId }
+              : ev;
+            store.updateEvent(ev.id, update);
+          } else {
+            store.addEvent(
+              patch.resourceId ? { ...ev, resourceId: patch.resourceId } : ev,
+            );
+          }
         }
         for (const id of mutation.remove) store.removeEvent(id);
       }

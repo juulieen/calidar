@@ -38,11 +38,64 @@ function day(daysFromToday: number): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
-/** Bookable resources for the Timeline view (rooms shown as rows). */
 const RESOURCES: CalendarResource[] = [
   { id: "room-a", title: "Room A", color: "#1a73e8" },
-  { id: "room-b", title: "Room B", color: "#0b8043" },
-  { id: "room-c", title: "Room C", color: "#9334e6" },
+  { id: "room-b", title: "Room B", color: "#9334e6" },
+  { id: "room-c", title: "Room C", color: "#0b8043" },
+];
+
+// Per-resource events on the focal day: overlaps within Room A, a parallel
+// booking in Room B, and an all-day hold in Room C.
+const RESOURCE_EVENTS: CalendarEvent[] = [
+  {
+    id: "res-a1",
+    title: "Sprint planning",
+    start: at(0, 9, 0),
+    end: at(0, 10, 30),
+    resourceId: "room-a",
+    color: "#1a73e8",
+  },
+  {
+    id: "res-a2",
+    title: "Vendor call",
+    start: at(0, 10, 0),
+    end: at(0, 11, 0),
+    resourceId: "room-a",
+    color: "#e8710a",
+  },
+  {
+    id: "res-b1",
+    title: "Interview",
+    start: at(0, 9, 30),
+    end: at(0, 11, 0),
+    resourceId: "room-b",
+    color: "#9334e6",
+  },
+  {
+    id: "res-b2",
+    title: "Workshop",
+    start: at(0, 14, 0),
+    end: at(0, 16, 0),
+    resourceId: "room-b",
+    color: "#3f51b5",
+  },
+  {
+    id: "res-c1",
+    title: "Reserved (setup)",
+    start: day(0),
+    end: day(1),
+    allDay: true,
+    resourceId: "room-c",
+    color: "#0b8043",
+  },
+  {
+    id: "res-c2",
+    title: "All-hands",
+    start: at(0, 13, 0),
+    end: at(0, 14, 0),
+    resourceId: "room-c",
+    color: "#d93025",
+  },
 ];
 
 const EVENTS: CalendarEvent[] = [
@@ -134,7 +187,7 @@ const EVENTS: CalendarEvent[] = [
 // them (Tokyo shifts every meeting by +7/+8h). All-day events stay "floating",
 // exactly like real calendars treat them.
 const PINNED_ZONE = "Europe/Paris";
-const DISPLAY_EVENTS: CalendarEvent[] = EVENTS.map((e) =>
+const DISPLAY_EVENTS: CalendarEvent[] = [...EVENTS, ...RESOURCE_EVENTS].map((e) =>
   e.allDay ? e : { ...e, timeZone: PINNED_ZONE },
 );
 

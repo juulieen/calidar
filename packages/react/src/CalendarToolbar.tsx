@@ -35,16 +35,28 @@ const TIMELINE_UNITS: { label: string; shortLabel: string; unit: TimelineUnit }[
 ];
 
 export function CalendarToolbar(): JSX.Element {
-  const { store, snapshot, effectiveView, stepPeriod, timeline } =
-    useCalendarContext();
+  const {
+    store,
+    snapshot,
+    effectiveView,
+    stepPeriod,
+    resourcesActive,
+    setResourceMode,
+    resourceView,
+    timeline,
+  } = useCalendarContext();
   const { state } = snapshot;
   const { view, cursor, timeZone, visibleDays } = state;
+  const hasResources = state.resources.length > 0;
 
   // Derive the title from what's *actually* rendered. For time grids the
   // effective view model carries each visible day, so a collapsed 3-day window
   // reads "23 – 25 June" rather than the full week.
   let title: string;
-  if (timeline.active) {
+  if (resourceView) {
+    // Resources mode navigates one day at a time; show that day's full date.
+    title = formatRangeTitle("day", resourceView.date, 1);
+  } else if (timeline.active) {
     // Timeline title mirrors its unit (day → full date, week/month → range).
     const cursorDate = epochToPlainDate(cursor, timeZone);
     if (timeline.unit === "day") {
@@ -72,6 +84,7 @@ export function CalendarToolbar(): JSX.Element {
   }
 
   const isActive = (opt: ViewOption): boolean =>
+    !resourcesActive &&
     !timeline.active &&
     opt.view === view &&
     (opt.view !== "days" || opt.visibleDays === visibleDays);
@@ -113,7 +126,8 @@ export function CalendarToolbar(): JSX.Element {
             aria-pressed={isActive(opt)}
             aria-label={opt.label}
             onClick={() => {
-              // Leaving timeline mode hands control back to the store view.
+              // Leaving a local mode hands control back to the store view.
+              setResourceMode(false);
               timeline.setActive(false);
               if (opt.visibleDays != null) store.setVisibleDays(opt.visibleDays);
               store.setView(opt.view);
@@ -125,12 +139,34 @@ export function CalendarToolbar(): JSX.Element {
             </span>
           </button>
         ))}
+
+        {hasResources && (
+          <button
+            type="button"
+            className={`cal-btn cal-btn--view${resourcesActive ? " cal-btn--active" : ""}`}
+            aria-pressed={resourcesActive}
+            aria-label="Resources"
+            onClick={() => {
+              timeline.setActive(false);
+              setResourceMode(true);
+            }}
+          >
+            <span className="cal-btn__label cal-btn__label--full">Resources</span>
+            <span className="cal-btn__label cal-btn__label--short" aria-hidden="true">
+              Res
+            </span>
+          </button>
+        )}
+
         <button
           type="button"
           className={`cal-btn cal-btn--view${timeline.active ? " cal-btn--active" : ""}`}
           aria-pressed={timeline.active}
           aria-label="Timeline"
-          onClick={() => timeline.setActive(!timeline.active)}
+          onClick={() => {
+            setResourceMode(false);
+            timeline.setActive(!timeline.active);
+          }}
         >
           <span className="cal-btn__label cal-btn__label--full">Timeline</span>
           <span className="cal-btn__label cal-btn__label--short" aria-hidden="true">

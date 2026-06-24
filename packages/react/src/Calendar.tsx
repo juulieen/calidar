@@ -3,15 +3,17 @@
  * `store`, wires the host callbacks into context, renders the toolbar and the
  * active view, and provides minimal keyboard navigation.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   CalendarOptions,
   CalendarStore,
+  ResourceViewModel,
   TimelineViewModel,
   ViewModel,
 } from "@calidar/core";
 import {
   computeView,
+  computeResourceView,
   computeTimelineView,
   addDays,
   addMonths,
@@ -29,6 +31,7 @@ import { CalendarToolbar } from "./CalendarToolbar.js";
 import { TimeGridView } from "./TimeGridView.js";
 import { MonthView } from "./MonthView.js";
 import { AgendaView } from "./AgendaView.js";
+import { ResourcesView } from "./ResourcesView.js";
 import { TimelineView } from "./TimelineView.js";
 
 export interface CalendarProps extends CalendarCallbacks {
@@ -68,6 +71,14 @@ export function Calendar(props: CalendarProps): JSX.Element {
   } = props;
 
   const { store, snapshot } = useCalendar(externalStore ?? options ?? {});
+
+  // Local "resources" mode. This is NOT a store `view` (the resources view is a
+  // standalone view model the adapter drives), so we track it in component
+  // state and prioritise it over `snapshot.view` while active. It auto-clears if
+  // the calendar ever ends up with no resources to show.
+  const [resourceMode, setResourceMode] = useState(false);
+  const hasResources = snapshot.state.resources.length > 0;
+  const resourcesActive = resourceMode && hasResources;
 
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -132,10 +143,26 @@ export function Calendar(props: CalendarProps): JSX.Element {
     return { effectiveView: compactView, compactNav: { nDays } };
   }, [responsive, width, snapshot]);
 
-  // Step the cursor by one period, honouring the compact day window when the
-  // time view has been collapsed (advance N days instead of a whole week).
+  // Resources view model for the focal day, computed only while the mode is
+  // active. DST-safe day navigation is handled in `stepPeriod` below.
+  const resourceView = useMemo<ResourceViewModel | null>(() => {
+    if (!resourcesActive) return null;
+    return computeResourceView(snapshot.state, snapshot.events, snapshot.now);
+  }, [resourcesActive, snapshot]);
+
+  // Step the cursor by one period. In resources mode we move one day at a time
+  // (the view is single-day); honour the compact day window otherwise; else a
+  // whole view step.
   const stepPeriod = useMemo(() => {
     return (dir: 1 | -1): void => {
+      if (resourcesActive) {
+        const tz = snapshot.state.timeZone;
+        const cursorDate = epochToPlainDate(snapshot.state.cursor, tz);
+        const target = addDays(cursorDate, dir);
+        // Place at local midday to dodge DST edges, mirroring the core store.
+        store.setCursor(startOfDayEpoch(target, tz) + 12 * 3_600_000);
+        return;
+      }
       if (timelineActive) {
         // Step by the timeline unit (DST-safe: land at local midday).
         const tz = snapshot.state.timeZone;
@@ -161,7 +188,18 @@ export function Calendar(props: CalendarProps): JSX.Element {
         store.next();
       }
     };
-  }, [store, snapshot, compactNav, timelineActive, timelineUnit]);
+  }, [
+    store,
+    snapshot,
+    compactNav,
+    resourcesActive,
+    timelineActive,
+    timelineUnit,
+  ]);
+
+  const setResourceModeCb = useCallback((on: boolean): void => {
+    setResourceMode(on);
+  }, []);
 
   const timeline = useMemo(
     () => ({
@@ -184,6 +222,9 @@ export function Calendar(props: CalendarProps): JSX.Element {
       effectiveView,
       compactNav,
       stepPeriod,
+      resourcesActive,
+      setResourceMode: setResourceModeCb,
+      resourceView,
       timeline,
       onEventCreate,
       onEventUpdate,
@@ -197,6 +238,9 @@ export function Calendar(props: CalendarProps): JSX.Element {
       effectiveView,
       compactNav,
       stepPeriod,
+      resourcesActive,
+      setResourceModeCb,
+      resourceView,
       timeline,
       onEventCreate,
       onEventUpdate,
@@ -241,7 +285,9 @@ export function Calendar(props: CalendarProps): JSX.Element {
       >
         {!hideToolbar && <CalendarToolbar />}
         <div className="calidar__view">
-          {timelineView ? (
+          {resourceView ? (
+            <ResourcesView model={resourceView} />
+          ) : timelineView ? (
             <TimelineView model={timelineView} now={snapshot.now} />
           ) : view.kind === "month" ? (
             <MonthView model={view} />
