@@ -107,6 +107,16 @@ export interface DayBand {
   continuesAfter: boolean;
 }
 
+/** A working-hours window, as minutes from midnight, on given ISO weekdays. */
+export interface BusinessHours {
+  /** Start minute from midnight (e.g. 9:00 = 540). */
+  startMinute: number;
+  /** End minute from midnight (e.g. 17:00 = 1020). */
+  endMinute: number;
+  /** ISO weekdays it applies to (1 = Mon ... 7 = Sun). Default Mon-Fri. */
+  daysOfWeek?: number[];
+}
+
 /** Calendar engine configuration / current state snapshot. */
 export interface CalendarState {
   view: CalendarViewKind;
@@ -120,6 +130,10 @@ export interface CalendarState {
   visibleDays: number;
   /** Pixels per hour for timed grids — adapters may override at render time. */
   hourHeight: number;
+  /** Snap/slot granularity in minutes for timed interactions (default 15). */
+  slotMinutes: number;
+  /** Working-hours window(s); adapters may shade outside time / restrict drops. */
+  businessHours?: BusinessHours | BusinessHours[];
   /** Resources shown (in order) by the "resources" view. */
   resources: CalendarResource[];
 }

@@ -17,11 +17,20 @@ export type {
   CalendarResource,
   CalendarState,
   CalendarViewKind,
+  BusinessHours,
   EventInstance,
   TimedLayout,
   DayBand,
   EpochRange,
 } from "./types.js";
+
+// Business hours
+export {
+  isWithinBusinessHours,
+  businessWindowsForDate,
+  businessWindowForDate,
+  normalizeBusinessHours,
+} from "./engine/businessHours.js";
 
 // Store
 export {
